@@ -92,7 +92,7 @@ export function Students() {
 
       {/* Student Profile Drawer */}
       {selectedStudent && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-sm" onClick={() => setSelectedStudent(null)}>
+        <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-sm">
           <div className="w-full max-w-md h-full bg-white shadow-2xl overflow-y-auto animate-in slide-in-from-right-0 duration-300" onClick={e => e.stopPropagation()}>
             <div className="sticky top-0 bg-white border-b border-slate-100 p-5 flex justify-between items-center z-10">
               <h2 className="text-lg font-bold text-slate-900">Student Profile</h2>
