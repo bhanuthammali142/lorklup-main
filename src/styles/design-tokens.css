@@ -1,0 +1,73 @@
+/* src/styles/design-tokens.css */
+:root {
+  /* Colors */
+  --color-primary: #2563eb;       /* Blue 600 */
+  --color-primary-hover: #1d4ed8; /* Blue 700 */
+  --color-primary-light: #eff6ff; /* Blue 50 */
+  
+  --color-secondary: #4f46e5;     /* Indigo 600 */
+  --color-secondary-hover: #4338ca; /* Indigo 700 */
+  
+  --color-success: #10b981;       /* Emerald 500 */
+  --color-success-hover: #059669; /* Emerald 600 */
+  
+  --color-warning: #f59e0b;       /* Amber 500 */
+  --color-warning-hover: #d97706; /* Amber 600 */
+  
+  --color-danger: #f43f5e;        /* Rose 500 */
+  --color-danger-hover: #e11d48;  /* Rose 600 */
+
+  /* Neutral Dark Palette (Premium Student Experience) */
+  --color-dark-bg: #0b0f19;       /* Deep slate/navy background */
+  --color-dark-card: #151c2e;     /* High contrast card background */
+  --color-dark-border: #1e294b;   /* Sleek subtle borders */
+  --color-dark-text-main: #f8fafc;
+  --color-dark-text-muted: #94a3b8;
+
+  /* Typography Sizes */
+  --text-xs: 0.75rem;     /* 12px */
+  --text-sm: 0.875rem;    /* 14px */
+  --text-base: 1rem;      /* 16px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.25rem;     /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+  --text-3xl: 1.875rem;   /* 30px */
+  --text-4xl: 2.25rem;    /* 36px */
+
+  /* Spacing Scale (4px base) */
+  --space-1: 0.25rem;  /* 4px */
+  --space-2: 0.5rem;   /* 8px */
+  --space-3: 0.75rem;  /* 12px */
+  --space-4: 1rem;     /* 16px */
+  --space-5: 1.25rem;  /* 20px */
+  --space-6: 1.5rem;   /* 24px */
+  --space-8: 2rem;     /* 32px */
+  --space-10: 2.5rem;  /* 40px */
+  --space-12: 3rem;    /* 48px */
+  --space-16: 4rem;    /* 64px */
+  --space-20: 5rem;    /* 80px */
+
+  /* Border Radii */
+  --radius-xs: 0.25rem;   /* 4px */
+  --radius-sm: 0.375rem;  /* 6px */
+  --radius-md: 0.5rem;    /* 8px */
+  --radius-lg: 0.75rem;   /* 12px */
+  --radius-xl: 1rem;      /* 16px */
+  --radius-2xl: 1.5rem;   /* 24px */
+
+  /* Box Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-glow: 0 0 15px 2px rgba(37, 99, 235, 0.2);
+
+  /* Transition Scale */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Safe Area Offsets for Mobile Devices */
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+}

@@ -28,6 +28,7 @@ const AdminBilling        = lazy(() => import('./admin/pages/Billing').then(m =>
 // ── Student layout + pages (lazy) ────────────────────────────────────────────
 const StudentLayout        = lazy(() => import('./student/StudentLayout').then(m => ({ default: m.StudentLayout })))
 const StudentDashboard     = lazy(() => import('./pages/student/StudentDashboard').then(m => ({ default: m.StudentDashboard })))
+const StudentAttendance    = lazy(() => import('./pages/student/StudentAttendance').then(m => ({ default: m.StudentAttendance })))
 const StudentFees          = lazy(() => import('./pages/student/StudentFees').then(m => ({ default: m.StudentFees })))
 const StudentComplaints    = lazy(() => import('./pages/student/StudentComplaints').then(m => ({ default: m.StudentComplaints })))
 const StudentAnnouncements = lazy(() => import('./pages/student/StudentAnnouncements').then(m => ({ default: m.StudentAnnouncements })))
@@ -100,6 +101,7 @@ function App() {
             }>
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard"     element={<Suspense fallback={<Fallback />}><StudentDashboard /></Suspense>} />
+              <Route path="attendance"    element={<Suspense fallback={<Fallback />}><StudentAttendance /></Suspense>} />
               <Route path="fees"          element={<Suspense fallback={<Fallback />}><StudentFees /></Suspense>} />
               <Route path="complaints"    element={<Suspense fallback={<Fallback />}><StudentComplaints /></Suspense>} />
               <Route path="announcements" element={<Suspense fallback={<Fallback />}><StudentAnnouncements /></Suspense>} />

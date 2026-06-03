@@ -1,0 +1,23 @@
+{
+  "short_name": "HostelOS",
+  "name": "HostelOS — Smart Hostel Management",
+  "description": "HostelOS — Manage boarders, rooms, fees, attendance and complaints in one place.",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/student/dashboard",
+  "background_color": "#0b0f19",
+  "theme_color": "#0f172a",
+  "display": "standalone",
+  "orientation": "portrait"
+}

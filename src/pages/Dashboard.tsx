@@ -1,9 +1,9 @@
 // @ts-nocheck
 import React, { useEffect, useState } from 'react'
-import { Users, Bed, CreditCard, TrendingUp, Sparkles, AlertCircle, RefreshCw } from 'lucide-react'
+import { Users, Bed, CreditCard, TrendingUp, Sparkles, AlertCircle, RefreshCw, MessageSquareWarning } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '../lib/AuthContext'
-import { getOrCreateHostel, getDashboardStats, getRevenueByMonth, getRoomsWithBeds } from '../lib/api'
+import { getOrCreateHostel, getDashboardStats, getRevenueByMonth, getRoomsWithBeds, getComplaints } from '../lib/api'
 import { useDocumentTitle } from '../lib/useDocumentTitle'
 import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis } from 'recharts'
 import { Skeleton } from '../components/Skeleton'
@@ -20,7 +20,7 @@ export function Dashboard() {
   
   const { user } = useAuth()
   const [hostelId, setHostelId] = useState<string | null>(null)
-  const [stats, setStats] = useState({ totalStudents: 0, totalBeds: 0, occupiedBeds: 0, monthlyRevenue: 0, pendingFees: 0, overdueFees: 0 })
+  const [stats, setStats] = useState({ totalStudents: 0, totalBeds: 0, occupiedBeds: 0, monthlyRevenue: 0, pendingFees: 0, overdueFees: 0, pendingComplaints: 0 })
   const [revenueData, setRevenueData] = useState<{ name: string; amount: number }[]>([])
   const [rooms, setRooms] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -35,8 +35,26 @@ export function Dashboard() {
   useEffect(() => {
     if (!hostelId) return
     setLoading(true)
-    Promise.all([getDashboardStats(hostelId), getRevenueByMonth(hostelId), getRoomsWithBeds(hostelId)])
-      .then(([s, rev, rData]) => { setStats(s); setRevenueData(rev); setRooms(rData) })
+    Promise.all([
+      getDashboardStats(hostelId),
+      getRevenueByMonth(hostelId),
+      getRoomsWithBeds(hostelId),
+      getComplaints(hostelId)
+    ])
+      .then(([s, rev, rData, complaints]) => {
+        const pendingComp = Array.isArray(complaints) ? complaints.filter(c => c.status === 'open' || c.status === 'in_progress').length : 0
+        setStats({
+          totalStudents: s.totalStudents || 0,
+          totalBeds: s.totalBeds || 0,
+          occupiedBeds: s.occupiedBeds || 0,
+          monthlyRevenue: s.monthlyRevenue || 0,
+          pendingFees: s.pendingFees || 0,
+          overdueFees: s.overdueFees || 0,
+          pendingComplaints: pendingComp
+        })
+        setRevenueData(rev || [])
+        setRooms(rData || [])
+      })
       .finally(() => setLoading(false))
   }, [hostelId])
 
@@ -47,6 +65,7 @@ export function Dashboard() {
     { name: 'Occupancy Rate', value: `${occupancyRate}%`, icon: Bed, change: `${stats.occupiedBeds} / ${stats.totalBeds} beds`, positive: true, color: 'bg-emerald-50 text-emerald-600' },
     { name: 'Monthly Revenue', value: fmt(stats.monthlyRevenue), icon: TrendingUp, change: 'Collected this month', positive: true, color: 'bg-indigo-50 text-indigo-600' },
     { name: 'Pending Fees', value: fmt(stats.pendingFees + stats.overdueFees), icon: CreditCard, change: `${fmt(stats.overdueFees)} overdue`, positive: false, color: 'bg-rose-50 text-rose-600' },
+    { name: 'Pending Complaints', value: String(stats.pendingComplaints), icon: MessageSquareWarning, change: 'Requires resolution', positive: false, color: 'bg-amber-50 text-amber-600' }
   ]
 
   return (
@@ -80,7 +99,7 @@ export function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
         {cards.map((stat) => {
           const Icon = stat.icon
           return (

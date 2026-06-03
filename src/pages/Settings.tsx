@@ -1,5 +1,5 @@
 // src/pages/Settings.tsx
-import React, { useEffect, useState, lazy, Suspense } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { 
   Building, 
   Bell, 
@@ -15,10 +15,7 @@ import {
   Save, 
   Loader2, 
   UtensilsCrossed, 
-  CheckCircle2, 
   Download, 
-  Mail, 
-  Phone,
   LayoutGrid,
   CalendarRange,
   Bed,

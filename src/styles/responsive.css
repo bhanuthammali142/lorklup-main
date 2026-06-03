@@ -1,0 +1,59 @@
+/* src/styles/responsive.css */
+
+/* Global Mobile-First Responsive Utilities */
+
+@layer utilities {
+  /* Safe area helpers */
+  .pt-safe {
+    padding-top: calc(1rem + var(--safe-area-top));
+  }
+  .pb-safe {
+    padding-bottom: calc(1rem + var(--safe-area-bottom));
+  }
+  .px-safe {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
+  /* Bottom bar space adjustment */
+  .pb-bottom-nav {
+    padding-bottom: calc(4.5rem + var(--safe-area-bottom)); /* 72px nav bar height + safe area bottom */
+  }
+
+  /* Grid layout modifications */
+  .responsive-grid-dashboard {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6;
+  }
+
+  /* Scroll snapshots (great for mobile horizontal list elements) */
+  .snap-x-mandatory {
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  .snap-align-start {
+    scroll-snap-align: start;
+  }
+
+  /* Force Minimum Touch Targets (44px) */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Responsive hidden utilities */
+  .mobile-only {
+    @apply block md:hidden;
+  }
+  
+  .desktop-only {
+    @apply hidden md:block;
+  }
+
+  /* Hide scrollbars but preserve functionality */
+  .scrollbar-hidden {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .scrollbar-hidden::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari and Opera */
+  }
+}
