@@ -36,7 +36,6 @@ export function FullScreenModal({
       {/* Backdrop */}
       <div 
         className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity duration-300"
-        onClick={onClose}
         aria-hidden="true"
       />
 
