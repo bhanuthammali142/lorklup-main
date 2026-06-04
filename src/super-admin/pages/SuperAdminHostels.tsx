@@ -7,6 +7,7 @@
  * - Added safe array operations
  */
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Building2, Plus, Search, ShieldCheck, RefreshCw, Eye, X, MapPin, Phone, Mail, Calendar, Hash, Upload } from 'lucide-react'
 import { apiHostels } from '../../lib/api-client'
 import { AddHostelModal } from '../components/AddHostelModal'
@@ -14,13 +15,13 @@ import { ImportHostelsModal } from '../components/ImportHostelsModal'
 import toast from 'react-hot-toast'
 
 export function SuperAdminHostels() {
+  const navigate = useNavigate()
   const [hostels, setHostels] = useState<any[]>([])
   const [filtered, setFiltered] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
-  const [viewHostel, setViewHostel] = useState<any | null>(null)
 
   const load = async () => {
     setLoading(true)
@@ -161,7 +162,7 @@ export function SuperAdminHostels() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button onClick={() => setViewHostel(hostel)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition">
+                      <button onClick={() => navigate(`/superadmin/hostels/${hostel.id}`)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition">
                         <Eye className="h-4 w-4" />
                       </button>
                       <span className="inline-flex shrink-0 items-center gap-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-full">
@@ -243,7 +244,7 @@ export function SuperAdminHostels() {
                       {hostel.created_at ? new Date(hostel.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button onClick={() => setViewHostel(hostel)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition">
+                      <button onClick={() => navigate(`/superadmin/hostels/${hostel.id}`)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition">
                         <Eye className="h-4 w-4" />
                       </button>
                     </td>
@@ -267,48 +268,6 @@ export function SuperAdminHostels() {
           onClose={() => setShowImportModal(false)}
           onSuccess={() => { load(); setShowImportModal(false) }}
         />
-      )}
-
-      {/* Hostel Detail Drawer */}
-      {viewHostel && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-sm">
-          <div className="w-full max-w-md h-full bg-white shadow-2xl overflow-y-auto animate-in slide-in-from-right-0 duration-300" onClick={e => e.stopPropagation()}>
-            <div className="sticky top-0 bg-white border-b border-slate-100 p-5 flex justify-between items-center z-10">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-black text-lg">
-                  {viewHostel.name?.charAt(0) || viewHostel.hostel_name?.charAt(0) || '?'}
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900">{viewHostel.name || viewHostel.hostel_name}</h2>
-                  <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                    <ShieldCheck className="h-3 w-3" /> Active
-                  </span>
-                </div>
-              </div>
-              <button onClick={() => setViewHostel(null)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-                <X className="h-5 w-5 text-slate-500" />
-              </button>
-            </div>
-            <div className="p-6 space-y-4">
-              {[
-                { icon: MapPin,   label: 'Address',       value: viewHostel.address || viewHostel.address_line1 || '—' },
-                { icon: Mail,     label: 'Contact Email', value: viewHostel.email || viewHostel.contact_email || '—' },
-                { icon: Phone,    label: 'Contact Phone', value: viewHostel.phone || viewHostel.contact_phone || '—' },
-                { icon: Hash,     label: 'Owner',         value: viewHostel.owner_name || viewHostel.owner_email || '—' },
-                { icon: Hash,     label: 'Hostel ID',     value: viewHostel.id?.toString() || '—' },
-                { icon: Calendar, label: 'Registered On', value: viewHostel.created_at ? new Date(viewHostel.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : '—' },
-              ].map(({ icon: Icon, label, value }) => (
-                <div key={label} className="flex items-start gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
-                  <Icon className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-xs text-slate-400 uppercase font-semibold">{label}</p>
-                    <p className="text-sm text-slate-800 font-medium mt-0.5 break-all">{value}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
       )}
     </div>
   )

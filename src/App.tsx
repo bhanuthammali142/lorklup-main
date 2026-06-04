@@ -40,6 +40,7 @@ const StudentRewards       = lazy(() => import('./pages/student/StudentRewards')
 const SuperAdminLayout        = lazy(() => import('./super-admin/SuperAdminLayout').then(m => ({ default: m.SuperAdminLayout })))
 const SuperAdminDashboard     = lazy(() => import('./super-admin/pages/SuperAdminDashboard').then(m => ({ default: m.SuperAdminDashboard })))
 const SuperAdminHostels       = lazy(() => import('./super-admin/pages/SuperAdminHostels').then(m => ({ default: m.SuperAdminHostels })))
+const SuperAdminHostelDetails = lazy(() => import('./super-admin/pages/SuperAdminHostelDetails').then(m => ({ default: m.SuperAdminHostelDetails })))
 const SuperAdminUsers         = lazy(() => import('./super-admin/pages/SuperAdminUsers').then(m => ({ default: m.SuperAdminUsers })))
 const SuperAdminFinance       = lazy(() => import('./super-admin/pages/SuperAdminFinance').then(m => ({ default: m.SuperAdminFinance })))
 const SuperAdminComplaints    = lazy(() => import('./super-admin/pages/SuperAdminComplaints').then(m => ({ default: m.SuperAdminComplaints })))
@@ -122,6 +123,7 @@ function App() {
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard"     element={<Suspense fallback={<Fallback />}><SuperAdminDashboard /></Suspense>} />
               <Route path="hostels"       element={<Suspense fallback={<Fallback />}><SuperAdminHostels /></Suspense>} />
+              <Route path="hostels/:id"   element={<Suspense fallback={<Fallback />}><SuperAdminHostelDetails /></Suspense>} />
               <Route path="users"         element={<Suspense fallback={<Fallback />}><SuperAdminUsers /></Suspense>} />
               <Route path="finance"       element={<Suspense fallback={<Fallback />}><SuperAdminFinance /></Suspense>} />
               <Route path="complaints"    element={<Suspense fallback={<Fallback />}><SuperAdminComplaints /></Suspense>} />
