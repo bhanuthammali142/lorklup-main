@@ -9,6 +9,17 @@ import {
 } from 'lucide-react'
 import { apiHostels, apiSuperAdmin, apiRooms } from '../../lib/api-client'
 
+function safeExtractArray(res: any): any[] {
+  if (!res) return []
+  if (Array.isArray(res)) return res
+  if (res && typeof res === 'object') {
+    if (res.data && Array.isArray(res.data)) return res.data
+    // If it has success: false or an error message, fallback to empty array
+    if (res.success === false || res.error) return []
+  }
+  return []
+}
+
 export function SuperAdminHostelDetails() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -17,51 +28,59 @@ export function SuperAdminHostelDetails() {
   const [financeSearch, setFinanceSearch] = useState('')
 
   // 1. Fetch all hostels to find our selected one
-  const { data: hostels = [], isLoading: loadingHostel } = useQuery<any[]>({
+  const { data: hostelsRaw = [], isLoading: loadingHostel } = useQuery<any[]>({
     queryKey: ['sa-hostels'],
-    queryFn: () => apiHostels.getAll() as Promise<any[]>,
+    queryFn: async () => {
+      const res = await apiHostels.getAll()
+      return safeExtractArray(res)
+    },
   })
+  const hostels = safeExtractArray(hostelsRaw)
   const hostel = hostels.find((h: any) => String(h.id) === String(id)) as any
 
   // 2. Fetch students for this hostel
-  const { data: students = [], isLoading: loadingStudents } = useQuery<any[]>({
+  const { data: studentsRaw = [], isLoading: loadingStudents } = useQuery<any[]>({
     queryKey: ['sa-hostel-students', id],
     queryFn: async () => {
-      const res = await apiSuperAdmin.getStudents({ hostel_id: id || '' }) as any
-      return res?.data || res || []
+      const res = await apiSuperAdmin.getStudents({ hostel_id: id || '' })
+      return safeExtractArray(res)
     },
     enabled: !!id,
   })
+  const students = safeExtractArray(studentsRaw)
 
   // 3. Fetch fees for this hostel
-  const { data: fees = [], isLoading: loadingFees } = useQuery<any[]>({
+  const { data: feesRaw = [], isLoading: loadingFees } = useQuery<any[]>({
     queryKey: ['sa-hostel-fees', id],
     queryFn: async () => {
-      const res = await apiSuperAdmin.getFees({ hostel_id: id || '' }) as any
-      return res?.data || res || []
+      const res = await apiSuperAdmin.getFees({ hostel_id: id || '' })
+      return safeExtractArray(res)
     },
     enabled: !!id,
   })
+  const fees = safeExtractArray(feesRaw)
 
   // 4. Fetch payments for this hostel
-  const { data: payments = [], isLoading: loadingPayments } = useQuery<any[]>({
+  const { data: paymentsRaw = [], isLoading: loadingPayments } = useQuery<any[]>({
     queryKey: ['sa-hostel-payments', id],
     queryFn: async () => {
-      const res = await apiSuperAdmin.getPayments({ hostel_id: id || '' }) as any
-      return res?.data || res || []
+      const res = await apiSuperAdmin.getPayments({ hostel_id: id || '' })
+      return safeExtractArray(res)
     },
     enabled: !!id,
   })
+  const payments = safeExtractArray(paymentsRaw)
 
   // 5. Fetch rooms for this hostel
-  const { data: rooms = [], isLoading: loadingRooms } = useQuery<any[]>({
+  const { data: roomsRaw = [], isLoading: loadingRooms } = useQuery<any[]>({
     queryKey: ['sa-hostel-rooms', id],
     queryFn: async () => {
-      const res = await apiRooms.getAll(id || '') as any
-      return res?.data || res || []
+      const res = await apiRooms.getAll(id || '')
+      return safeExtractArray(res)
     },
     enabled: !!id,
   })
+  const rooms = safeExtractArray(roomsRaw)
 
   if (loadingHostel) {
     return (
