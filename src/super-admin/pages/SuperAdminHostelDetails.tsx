@@ -26,28 +26,40 @@ export function SuperAdminHostelDetails() {
   // 2. Fetch students for this hostel
   const { data: students = [], isLoading: loadingStudents } = useQuery<any[]>({
     queryKey: ['sa-hostel-students', id],
-    queryFn: () => apiSuperAdmin.getStudents({ hostel_id: id || '' }) as Promise<any[]>,
+    queryFn: async () => {
+      const res = await apiSuperAdmin.getStudents({ hostel_id: id || '' }) as any
+      return res?.data || res || []
+    },
     enabled: !!id,
   })
 
   // 3. Fetch fees for this hostel
   const { data: fees = [], isLoading: loadingFees } = useQuery<any[]>({
     queryKey: ['sa-hostel-fees', id],
-    queryFn: () => apiSuperAdmin.getFees({ hostel_id: id || '' }) as Promise<any[]>,
+    queryFn: async () => {
+      const res = await apiSuperAdmin.getFees({ hostel_id: id || '' }) as any
+      return res?.data || res || []
+    },
     enabled: !!id,
   })
 
   // 4. Fetch payments for this hostel
   const { data: payments = [], isLoading: loadingPayments } = useQuery<any[]>({
     queryKey: ['sa-hostel-payments', id],
-    queryFn: () => apiSuperAdmin.getPayments({ hostel_id: id || '' }) as Promise<any[]>,
+    queryFn: async () => {
+      const res = await apiSuperAdmin.getPayments({ hostel_id: id || '' }) as any
+      return res?.data || res || []
+    },
     enabled: !!id,
   })
 
   // 5. Fetch rooms for this hostel
   const { data: rooms = [], isLoading: loadingRooms } = useQuery<any[]>({
     queryKey: ['sa-hostel-rooms', id],
-    queryFn: () => apiRooms.getAll(id || '') as Promise<any[]>,
+    queryFn: async () => {
+      const res = await apiRooms.getAll(id || '') as any
+      return res?.data || res || []
+    },
     enabled: !!id,
   })
 
