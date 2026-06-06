@@ -2,6 +2,7 @@ const express = require('express');
 const router  = express.Router();
 const { verifyToken, checkRole } = require('../middleware/auth');
 const ctrl = require('../controllers/superAdminController');
+const billingCtrl = require('../controllers/subscriptionController');
 
 // All routes require super_admin role
 router.use(verifyToken);
@@ -38,5 +39,12 @@ router.get('/audit-logs',         ctrl.getAuditLogs);
 // Notifications
 router.get('/notifications',      ctrl.getNotifications);
 router.post('/notifications',     ctrl.sendNotification);
+
+// Platform Billing (SaaS)
+router.get('/billing/stats',          billingCtrl.getBillingStats);
+router.get('/billing/subscriptions',  billingCtrl.getAllSubscriptions);
+router.patch('/billing/subscriptions/:id/status', billingCtrl.manuallyToggleSubscription);
+router.get('/billing/settings',       billingCtrl.getBillingSettings);
+router.put('/billing/settings',       billingCtrl.updateBillingSettings);
 
 module.exports = router;

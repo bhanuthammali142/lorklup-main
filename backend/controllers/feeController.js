@@ -148,7 +148,7 @@ async function processPayment(req, res) {
 
     // Insert payment record
     await conn.query(
-      'INSERT INTO payments (id, hostel_id, fee_id, student_id, amount, payment_method, transaction_id) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id',
+      'INSERT INTO student_payments (id, hostel_id, fee_id, student_id, amount, payment_method, transaction_id) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id',
       [crypto.randomUUID(), fee.hostel_id, id, fee.student_id, amount_paid, payment_method || 'cash', receiptId]
     )
 

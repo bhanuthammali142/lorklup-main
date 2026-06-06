@@ -17,53 +17,103 @@ router.post('/razorpay', express.json(), async (req, res) => {
             return res.status(400).send('Signature missing');
         }
 
-        const bodyString = JSON.stringify(req.body);
+        // Use rawBody if available, fallback to JSON.stringify(req.body)
+        const payloadStr = req.rawBody ? req.rawBody.toString() : JSON.stringify(req.body);
         const expectedSignature = crypto
             .createHmac('sha256', secret)
-            .update(bodyString)
+            .update(payloadStr)
             .digest('hex');
 
         if (signature !== expectedSignature) {
-            return res.status(400).send('Invalid signature');
+            // Also try with JSON.stringify just in case of mismatch
+            const fallbackSignature = crypto
+                .createHmac('sha256', secret)
+                .update(JSON.stringify(req.body))
+                .digest('hex');
+
+            if (signature !== fallbackSignature) {
+                console.warn('⚠️ Webhook Signature Mismatch');
+                return res.status(400).send('Invalid signature');
+            }
         }
 
         const event = req.body.event;
         const payload = req.body.payload;
 
         if (event === 'subscription.charged') {
-            const subscription = payload.subscription.entity;
-            const payment = payload.payment.entity;
+            const rzpSubscription = payload.subscription.entity;
+            const rzpPayment = payload.payment.entity;
 
-            // Update subscription to active, extend date by 1 month (or whatever the plan is)
-            await db.query(`
-                UPDATE subscriptions 
-                SET status = 'active', 
-                    current_period_end = NOW() + INTERVAL '1 month',
-                    updated_at = NOW()
-                WHERE razorpay_subscription_id = $1
-            `, [subscription.id]);
-
-            // We don't have hostel_id easily here unless we query it using razorpay_subscription_id
-            const { rows: [subRecord] } = await db.query(
-                'SELECT hostel_id, plan_id FROM subscriptions WHERE razorpay_subscription_id = $1',
-                [subscription.id]
+            // Fetch the subscription record
+            const { rows: [subscription] } = await db.query(
+                'SELECT * FROM subscriptions WHERE razorpay_subscription_id = $1',
+                [rzpSubscription.id]
             );
 
-            if (subRecord) {
+            if (subscription) {
+                const hostelId = subscription.hostel_id;
+                
+                // Calculate next billing date (extend 30 days)
+                const now = new Date();
+                let newNextBillingDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+                if (subscription.next_billing_date && new Date(subscription.next_billing_date) > now) {
+                    newNextBillingDate = new Date(new Date(subscription.next_billing_date).getTime() + 30 * 24 * 60 * 60 * 1000);
+                }
+
+                // Update subscription
+                await db.query(`
+                    UPDATE subscriptions 
+                    SET status = 'active', 
+                        end_date = $1,
+                        next_billing_date = $1,
+                        updated_at = NOW()
+                    WHERE id = $2
+                `, [newNextBillingDate, subscription.id]);
+
+                // Create paid payment record
+                const paymentId = crypto.randomUUID();
+                const invoiceNumber = `INV-${Date.now()}-${hostelId}`;
+
+                const { rows: [payment] } = await db.query(`
+                    INSERT INTO payments (
+                        id, hostel_id, subscription_id, payment_gateway, transaction_id, 
+                        amount, gst_amount, total_amount, payment_status, payment_date, invoice_number
+                    ) VALUES ($1, $2, $3, 'razorpay', $4, $5, $6, $7, 'paid', NOW(), $8)
+                    RETURNING *
+                `, [
+                    paymentId, 
+                    hostelId, 
+                    subscription.id, 
+                    rzpPayment.id, 
+                    subscription.plan_price, 
+                    subscription.gst_amount, 
+                    subscription.total_amount, 
+                    invoiceNumber
+                ]);
+
+                // Create invoice record
                 const invoiceId = crypto.randomUUID();
                 await db.query(`
-                    INSERT INTO platform_invoices (id, hostel_id, amount, status, paid_at, razorpay_payment_id)
-                    VALUES ($1, $2, $3, 'paid', NOW(), $4)
-                `, [invoiceId, subRecord.hostel_id, payment.amount / 100, payment.id]);
+                    INSERT INTO invoices (id, hostel_id, payment_id, invoice_number)
+                    VALUES ($1, $2, $3, $4)
+                `, [invoiceId, hostelId, payment.id, payment.invoice_number]);
+
+                console.log(`✅ Webhook processed subscription.charged for hostel_id=${hostelId}`);
+            } else {
+                console.warn(`⚠️ Webhook: Subscription not found for razorpay_subscription_id=${rzpSubscription.id}`);
             }
         } else if (event === 'subscription.halted' || event === 'subscription.cancelled') {
-            const subscription = payload.subscription.entity;
+            const rzpSubscription = payload.subscription.entity;
+            const newStatus = event === 'subscription.halted' ? 'suspended' : 'canceled';
+
             await db.query(`
                 UPDATE subscriptions 
                 SET status = $1, 
                     updated_at = NOW()
                 WHERE razorpay_subscription_id = $2
-            `, [event === 'subscription.halted' ? 'past_due' : 'canceled', subscription.id]);
+            `, [newStatus, rzpSubscription.id]);
+
+            console.log(`✅ Webhook processed ${event} -> set status to ${newStatus}`);
         }
 
         res.status(200).send('Webhook processed');

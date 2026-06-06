@@ -4,8 +4,10 @@ const { getStudents, addStudent, updateStudent, deleteStudent, bulkAddStudents }
 const { verifyToken, checkRole } = require('../middleware/auth')
 
 const tenantGuard = require('../middleware/tenantGuard');
+const subscriptionGuard = require('../middleware/subscriptionGuard');
 router.use(verifyToken);
 router.use(tenantGuard);
+router.use(subscriptionGuard);
 
 router.get('/',     getStudents)
 router.post('/',    checkRole('admin','super_admin'), addStudent)

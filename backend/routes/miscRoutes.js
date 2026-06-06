@@ -17,10 +17,11 @@ const { getStudents, addStudent, updateStudent, deleteStudent } = require('../co
 const { getRooms, addRoom, updateRoom, deleteRoom } = require('../controllers/roomController')
 const { getHostels, createHostel, updateHostel, createHostelWithOwner } = require('../controllers/hostelController')
 
-// All routes require auth
 const tenantGuard = require('../middleware/tenantGuard');
+const subscriptionGuard = require('../middleware/subscriptionGuard');
 router.use(verifyToken);
 router.use(tenantGuard);
+router.use(subscriptionGuard);
 
 // ── Dashboard ────────────────────────────────────────────────────────────────
 router.get('/dashboard', getDashboardStats)

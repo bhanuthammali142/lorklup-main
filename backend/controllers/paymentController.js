@@ -119,7 +119,7 @@ const verifyPayment = async (req, res) => {
     // Create payment record
     const paymentId = crypto.randomUUID();
     await db.query(
-      `INSERT INTO payments (id, hostel_id, fee_id, student_id, amount, payment_method, transaction_id)
+      `INSERT INTO student_payments (id, hostel_id, fee_id, student_id, amount, payment_method, transaction_id)
        VALUES ($1, $2, $3, $4, $5, 'razorpay', $6)`,
       [paymentId, fee.hostel_id, fee_id, fee.student_id, fee.due_amount, razorpay_payment_id]
     );
@@ -214,7 +214,7 @@ const getPaymentHistory = async (req, res) => {
 
     let query = `
       SELECT p.*, s.full_name, f.month
-      FROM payments p
+      FROM student_payments p
       JOIN fees f ON p.fee_id = f.id
       JOIN students s ON p.student_id = s.id
       WHERE p.hostel_id = $1

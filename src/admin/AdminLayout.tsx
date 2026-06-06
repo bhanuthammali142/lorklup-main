@@ -1,13 +1,29 @@
-// @ts-nocheck
-import React, { useEffect, useState } from 'react'
-import { Outlet, useLocation } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Outlet, useLocation, Link } from 'react-router-dom'
 import { AdminSidebar } from './components/AdminSidebar'
-import { Menu, X } from 'lucide-react'
+import { Menu, AlertCircle, ShieldAlert } from 'lucide-react'
 import { NotificationBell } from '../components/NotificationBell'
+import { useQuery } from '@tanstack/react-query'
+import { apiBilling } from '../lib/api-client'
 
 export function AdminLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const location = useLocation()
+
+  const { data: billingData } = useQuery({
+    queryKey: ['my-subscription'],
+    queryFn: async () => {
+      const res = await apiBilling.getMySubscription()
+      return res.data
+    },
+    staleTime: 1000 * 60 * 5, // 5 mins cache
+    retry: false
+  })
+
+  const sub = billingData?.subscription
+  const daysRemaining = sub?.daysRemaining ?? 0
+  const isExpired = sub?.isExpired ?? false
+  const isPastGracePeriod = sub?.isPastGracePeriod ?? false
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -61,6 +77,43 @@ export function AdminLayout() {
             </button>
           </div>
         </header>
+
+        {/* Subscription top warnings banner */}
+        {isPastGracePeriod && (
+          <div className="bg-red-600 text-white text-xs sm:text-sm px-4 py-2.5 flex items-center justify-between shadow-md font-bold shrink-0">
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="h-4 w-4" />
+              <span>Subscription expired past grace period. Dashboard writing capabilities are locked.</span>
+            </div>
+            <Link to="/admin/billing" className="underline hover:text-red-100 flex items-center gap-1 font-extrabold ml-4">
+              Renew Now &rarr;
+            </Link>
+          </div>
+        )}
+
+        {!isPastGracePeriod && isExpired && (
+          <div className="bg-orange-500 text-white text-xs sm:text-sm px-4 py-2.5 flex items-center justify-between shadow-md font-bold shrink-0">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              <span>Subscription expired. Please renew immediately to avoid service write-block.</span>
+            </div>
+            <Link to="/admin/billing" className="underline hover:text-orange-100 flex items-center gap-1 font-extrabold ml-4">
+              Renew Now &rarr;
+            </Link>
+          </div>
+        )}
+
+        {!isExpired && daysRemaining > 0 && daysRemaining <= 7 && (
+          <div className="bg-amber-500 text-white text-xs sm:text-sm px-4 py-2.5 flex items-center justify-between shadow-md font-bold shrink-0">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              <span>Subscription ending in {daysRemaining} {daysRemaining === 1 ? 'day' : 'days'}.</span>
+            </div>
+            <Link to="/admin/billing" className="underline hover:text-amber-100 flex items-center gap-1 font-extrabold ml-4">
+              Renew Subscription &rarr;
+            </Link>
+          </div>
+        )}
 
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-[1440px] mx-auto p-4 sm:p-6 lg:p-8">

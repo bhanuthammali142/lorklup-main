@@ -10,7 +10,7 @@ const getDashboardStats = async (req, res) => {
         const { rows: [{ active_hostels }] } = await db.query('SELECT COUNT(*) AS active_hostels FROM hostels WHERE is_active = TRUE');
         const { rows: [{ total_students }] } = await db.query('SELECT COUNT(*) AS total_students FROM students WHERE is_active = TRUE');
         const { rows: [{ total_users }] } = await db.query('SELECT COUNT(*) AS total_users FROM users');
-        const { rows: [{ total_revenue }] } = await db.query("SELECT COALESCE(SUM(amount),0) AS total_revenue FROM payments");
+        const { rows: [{ total_revenue }] } = await db.query("SELECT COALESCE(SUM(amount),0) AS total_revenue FROM student_payments");
         const { rows: [{ pending_fees }] } = await db.query("SELECT COALESCE(SUM(due_amount),0) AS pending_fees FROM fees WHERE status IN ('pending','overdue','partial')");
         const { rows: [{ open_complaints }] } = await db.query("SELECT COUNT(*) AS open_complaints FROM complaints WHERE status = 'open'");
         const { rows: [{ total_rooms }] } = await db.query('SELECT COUNT(*) AS total_rooms FROM rooms WHERE is_active = TRUE');
@@ -20,7 +20,7 @@ const getDashboardStats = async (req, res) => {
             SELECT
                 TO_CHAR(created_at, 'YYYY-MM') AS month,
                 SUM(amount) AS revenue
-            FROM payments
+            FROM student_payments
             WHERE created_at >= NOW() - INTERVAL '6 months'
             GROUP BY TO_CHAR(created_at, 'YYYY-MM')
             ORDER BY month ASC
@@ -178,7 +178,7 @@ const getAllHostels = async (req, res) => {
             LEFT JOIN hostel_owners ho ON ho.id = h.owner_id
             LEFT JOIN students s ON s.hostel_id = h.id AND s.is_active = TRUE
             LEFT JOIN rooms r ON r.hostel_id = h.id AND r.is_active = TRUE
-            LEFT JOIN payments p ON p.hostel_id = h.id
+            LEFT JOIN student_payments p ON p.hostel_id = h.id
             WHERE 1=1
         `;
         const params = [];
@@ -253,7 +253,7 @@ const getAllPayments = async (req, res) => {
             SELECT p.*, f.month, f.status AS fee_status,
                    s.full_name AS student_name, s.email AS student_email,
                    h.hostel_name
-            FROM payments p
+            FROM student_payments p
             JOIN fees f ON p.fee_id = f.id
             JOIN students s ON p.student_id = s.id
             JOIN hostels h ON p.hostel_id = h.id
@@ -426,7 +426,7 @@ const getRevenueSummary = async (req, res) => {
                    COALESCE(SUM(p.amount), 0) AS total_collected,
                    COUNT(p.id) AS payment_count
             FROM hostels h
-            LEFT JOIN payments p ON p.hostel_id = h.id
+            LEFT JOIN student_payments p ON p.hostel_id = h.id
             GROUP BY h.id
             ORDER BY total_collected DESC
         `);
@@ -435,7 +435,7 @@ const getRevenueSummary = async (req, res) => {
             SELECT TO_CHAR(p.created_at, 'Mon YYYY') AS label,
                    TO_CHAR(p.created_at, 'YYYY-MM') AS sort_key,
                    SUM(p.amount) AS revenue
-            FROM payments p
+            FROM student_payments p
             WHERE p.created_at >= NOW() - INTERVAL '12 months'
             GROUP BY TO_CHAR(p.created_at, 'Mon YYYY'), TO_CHAR(p.created_at, 'YYYY-MM')
             ORDER BY sort_key ASC
@@ -446,7 +446,7 @@ const getRevenueSummary = async (req, res) => {
                 COALESCE(SUM(amount), 0) AS total_revenue,
                 COALESCE(SUM(CASE WHEN EXTRACT(MONTH FROM created_at)=EXTRACT(MONTH FROM NOW()) AND EXTRACT(YEAR FROM created_at)=EXTRACT(YEAR FROM NOW()) THEN amount END), 0) AS this_month,
                 COALESCE(SUM(CASE WHEN EXTRACT(MONTH FROM created_at)=EXTRACT(MONTH FROM NOW() - INTERVAL '1 month') AND EXTRACT(YEAR FROM created_at)=EXTRACT(YEAR FROM NOW() - INTERVAL '1 month') THEN amount END), 0) AS last_month
-            FROM payments
+            FROM student_payments
         `);
 
         res.json({ success: true, data: { byHostel, byMonth, totals } });

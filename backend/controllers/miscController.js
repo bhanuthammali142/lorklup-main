@@ -19,7 +19,7 @@ async function getDashboardStats(req, res) {
     const occupiedBeds = beds.filter(b => b.status === 'occupied').length
 
     const { rows: payments } = await pool.query(
-      'SELECT amount FROM payments WHERE hostel_id = $1 AND created_at >= $2 AND created_at <= $3',
+      'SELECT amount FROM student_payments WHERE hostel_id = $1 AND created_at >= $2 AND created_at <= $3',
       [hostelId, monthStart + ' 00:00:00', monthEnd + ' 23:59:59']
     )
     const monthlyRevenue = payments.reduce((s, p) => s + Number(p.amount), 0)
@@ -41,7 +41,7 @@ async function getRevenueByMonth(req, res) {
   if (!hostelId) return res.json([])
   try {
     const { rows: rows } = await pool.query(
-      "SELECT TO_CHAR(created_at, 'Mon YY') AS name, SUM(amount) AS amount FROM payments WHERE hostel_id = $1 GROUP BY TO_CHAR(created_at, 'Mon YY'), EXTRACT(YEAR FROM created_at), EXTRACT(MONTH FROM created_at) ORDER BY EXTRACT(YEAR FROM created_at), EXTRACT(MONTH FROM created_at)",
+      "SELECT TO_CHAR(created_at, 'Mon YY') AS name, SUM(amount) AS amount FROM student_payments WHERE hostel_id = $1 GROUP BY TO_CHAR(created_at, 'Mon YY'), EXTRACT(YEAR FROM created_at), EXTRACT(MONTH FROM created_at) ORDER BY EXTRACT(YEAR FROM created_at), EXTRACT(MONTH FROM created_at)",
       [hostelId]
     )
     res.json(rows.map(r => ({ ...r, amount: Number(r.amount) })))

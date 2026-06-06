@@ -360,6 +360,30 @@ export const apiSuperAdmin = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+
+  // Platform Billing (SaaS)
+  getBillingStats: () =>
+    request<{ success: boolean; data: any }>('/api/super-admin/billing/stats'),
+
+  getBillingSubscriptions: (params: Record<string, string> = {}) => {
+    const qs = new URLSearchParams(params).toString()
+    return request<{ success: boolean; data: any[] }>(`/api/super-admin/billing/subscriptions${qs ? `?${qs}` : ''}`)
+  },
+
+  toggleSubscriptionStatus: (id: string, status: string) =>
+    request<{ success: boolean; data: any }>(`/api/super-admin/billing/subscriptions/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    }),
+
+  getBillingSettings: () =>
+    request<{ success: boolean; data: any }>('/api/super-admin/billing/settings'),
+
+  updateBillingSettings: (settings: Record<string, string>) =>
+    request<{ success: boolean; message: string }>('/api/super-admin/billing/settings', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    }),
 }
 
 // ── Notifications ─────────────────────────────────────────────────────────────
