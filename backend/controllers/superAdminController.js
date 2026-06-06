@@ -173,7 +173,11 @@ const getAllHostels = async (req, res) => {
                    ho.owner_name, ho.owner_email, ho.owner_phone,
                    COUNT(DISTINCT s.id) AS student_count,
                    COUNT(DISTINCT r.id) AS room_count,
-                   COALESCE(SUM(p.amount), 0) AS total_collected
+                   COALESCE(SUM(p.amount), 0) AS total_collected,
+                   (SELECT plan_price FROM subscriptions WHERE hostel_id = h.id LIMIT 1) AS subscription_price,
+                   (SELECT billing_cycle FROM subscriptions WHERE hostel_id = h.id LIMIT 1) AS subscription_billing_cycle,
+                   (SELECT status FROM subscriptions WHERE hostel_id = h.id LIMIT 1) AS subscription_status,
+                   (SELECT next_billing_date FROM subscriptions WHERE hostel_id = h.id LIMIT 1) AS subscription_next_billing_date
             FROM hostels h
             LEFT JOIN hostel_owners ho ON ho.id = h.owner_id
             LEFT JOIN students s ON s.hostel_id = h.id AND s.is_active = TRUE

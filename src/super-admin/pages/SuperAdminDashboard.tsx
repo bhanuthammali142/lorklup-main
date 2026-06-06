@@ -3,6 +3,7 @@
  * SuperAdminDashboard — Redesigned: slate-950 premium theme, dynamic occupancy stats, detailed command counters.
  */
 import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { Loader2, Building2, Users, DollarSign, TrendingUp, RefreshCw } from 'lucide-react'
 import { useAuth } from '../../lib/AuthContext'
 import { apiSuperAdmin } from '../../lib/api-client'
@@ -11,6 +12,7 @@ import toast from 'react-hot-toast'
 
 export function SuperAdminDashboard() {
   const { user } = useAuth()
+  const navigate = useNavigate()
 
   const { data: hostels = [], isLoading, refetch } = useQuery({
     queryKey: ['super-admin-hostels'],
@@ -26,11 +28,33 @@ export function SuperAdminDashboard() {
     staleTime: 1000 * 60 * 2,
   })
 
+  const { data: billingStats, refetch: refetchBillingStats } = useQuery({
+    queryKey: ['super-admin-billing-stats'],
+    queryFn: async () => {
+      try {
+        const res = await apiSuperAdmin.getBillingStats()
+        return res.data
+      } catch (err) {
+        return null
+      }
+    },
+    staleTime: 1000 * 60 * 2,
+  })
+
   // Calculate stats
   const totalStudents = hostels.reduce((sum: number, h: any) => sum + (Number(h.student_count) || 0), 0)
   
-  // Real MRR calculations (2999 per active subscription)
-  const monthlyMRR = hostels.length * 2999
+  const stats = billingStats?.stats || {
+    active_subscriptions: 0,
+    trialing_subscriptions: 0,
+    expired_subscriptions: 0,
+    mrr: 0
+  }
+
+  const totalSubCount = Math.max(hostels.length, 1)
+  const activePct = Math.min(100, Math.round((stats.active_subscriptions / totalSubCount) * 100))
+  const trialingPct = Math.min(100, Math.round((stats.trialing_subscriptions / totalSubCount) * 100))
+  const expiredPct = Math.min(100, Math.round((stats.expired_subscriptions / totalSubCount) * 100))
 
   if (!user || user.role !== 'super_admin') {
     return <div className="p-8 text-center text-slate-400">Access denied</div>
@@ -50,6 +74,7 @@ export function SuperAdminDashboard() {
           <button
             onClick={() => {
               refetch()
+              refetchBillingStats()
               toast.success('Platform stats refreshed')
             }}
             className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 hover:text-slate-900 transition active:scale-95 touch-target"
@@ -78,7 +103,7 @@ export function SuperAdminDashboard() {
           },
           {
             label: 'MRR Revenue',
-            value: isLoading ? '...' : `₹${monthlyMRR.toLocaleString('en-IN')}`,
+            value: isLoading ? '...' : `₹${Number(stats.mrr).toLocaleString('en-IN')}`,
             icon: DollarSign,
             color: 'bg-indigo-50 text-indigo-600 border-indigo-100',
             sub: 'Subscription base'
@@ -157,26 +182,35 @@ export function SuperAdminDashboard() {
             <div className="space-y-4">
               <div>
                 <div className="flex items-center justify-between text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
-                  <span>Paid Plan (₹2999/mo)</span>
-                  <span className="text-slate-900">{hostels.length}</span>
+                  <span>Active Subscriptions</span>
+                  <span className="text-slate-900">{stats.active_subscriptions}</span>
                 </div>
                 <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-500 rounded-full" style={{ width: '100%' }} />
+                  <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${activePct}%` }} />
                 </div>
               </div>
               <div>
                 <div className="flex items-center justify-between text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
                   <span>Standard Trialing</span>
-                  <span className="text-slate-900">0</span>
+                  <span className="text-slate-900">{stats.trialing_subscriptions}</span>
                 </div>
                 <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-amber-500 rounded-full" style={{ width: '0%' }} />
+                  <div className="h-full bg-amber-500 rounded-full" style={{ width: `${trialingPct}%` }} />
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center justify-between text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
+                  <span>Expired / Suspended</span>
+                  <span className="text-slate-900">{stats.expired_subscriptions}</span>
+                </div>
+                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-rose-500 rounded-full" style={{ width: `${expiredPct}%` }} />
                 </div>
               </div>
             </div>
           </div>
           <button
-            onClick={() => toast.success('Billing management dashboard is fully integrated with Razorpay configuration')}
+            onClick={() => navigate('/superadmin/subscriptions')}
             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs transition active:scale-[0.98] mt-6 touch-target shadow-sm shadow-indigo-500/10"
           >
             Manage Billing Plans

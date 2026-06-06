@@ -294,20 +294,52 @@ export function SuperAdminHostelDetails() {
                 <div className="space-y-4">
                   <div className="flex justify-between items-center text-sm">
                     <span className="font-bold text-slate-800">SaaS Plan</span>
-                    <span className="text-indigo-600 font-bold bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full text-xs">Paid Premium</span>
+                    <span className={`font-bold border px-2.5 py-0.5 rounded-full text-xs ${
+                      hostel.subscription_status === 'active' 
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                        : hostel.subscription_status === 'trialing'
+                        ? 'bg-indigo-50 text-indigo-700 border-indigo-100'
+                        : hostel.subscription_status === 'expired'
+                        ? 'bg-rose-50 text-rose-700 border-rose-100'
+                        : 'bg-amber-50 text-amber-700 border-amber-100'
+                    }`}>
+                      {(hostel.subscription_status === 'trialing' ? 'Free Trial' : (hostel.subscription_status || 'Trialing')).toUpperCase()}
+                    </span>
                   </div>
                   <div>
                     <div className="flex items-center justify-between text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
-                      <span>Monthly Base</span>
-                      <span className="text-slate-900">₹2,999/mo</span>
+                      <span>{hostel.subscription_billing_cycle === 'yearly' ? 'Yearly Base' : 'Monthly Base'}</span>
+                      <span className="text-slate-900">
+                        ₹{Number(hostel.subscription_price || 999).toLocaleString('en-IN')}/{hostel.subscription_billing_cycle === 'yearly' ? 'yr' : 'mo'}
+                      </span>
                     </div>
                     <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: '100%' }} />
+                      <div className={`h-full rounded-full ${
+                        hostel.subscription_status === 'active' 
+                          ? 'bg-emerald-500' 
+                          : hostel.subscription_status === 'trialing' 
+                          ? 'bg-indigo-500' 
+                          : 'bg-rose-500'
+                      }`} style={{ width: '100%' }} />
                     </div>
                   </div>
+                  {hostel.subscription_next_billing_date && (
+                    <div className="flex justify-between items-center text-[11px] text-slate-500 pt-1">
+                      <span>Next Bill Date:</span>
+                      <span className="font-bold text-slate-700">
+                        {new Date(hostel.subscription_next_billing_date).toLocaleDateString('en-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center text-xs text-slate-400 pt-2 border-t border-slate-100">
                     <span>Hostel Status:</span>
-                    <span className="text-emerald-600 font-bold">Good Standing</span>
+                    <span className={hostel.is_active ? "text-emerald-600 font-bold" : "text-rose-500 font-bold"}>
+                      {hostel.is_active ? 'Good Standing' : 'Inactive'}
+                    </span>
                   </div>
                 </div>
               </div>

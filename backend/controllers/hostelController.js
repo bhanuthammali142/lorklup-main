@@ -1,21 +1,32 @@
 const db     = require('../config/db')
 const bcrypt = require('bcryptjs')
 
-// GET /api/hostels
-// super_admin  → all hostels
-// admin        → only their hostel
 const getHostels = async (req, res) => {
     try {
         let hostels
         if (req.user.role === 'super_admin') {
-            const { rows } = await db.query('SELECT * FROM hostels ORDER BY created_at DESC')
+            const { rows } = await db.query(`
+                SELECT h.*,
+                       s.plan_price AS subscription_price,
+                       s.billing_cycle AS subscription_billing_cycle,
+                       s.status AS subscription_status,
+                       s.next_billing_date AS subscription_next_billing_date
+                FROM hostels h
+                LEFT JOIN subscriptions s ON s.hostel_id = h.id
+                ORDER BY h.created_at DESC
+            `)
             hostels = rows
         } else {
             // admin: return only the hostel linked to this user
             const { rows } = await db.query(
-                `SELECT h.*
+                `SELECT h.*,
+                        s.plan_price AS subscription_price,
+                        s.billing_cycle AS subscription_billing_cycle,
+                        s.status AS subscription_status,
+                        s.next_billing_date AS subscription_next_billing_date
                    FROM hostels h
                    JOIN hostel_owners ho ON ho.id = h.owner_id
+                   LEFT JOIN subscriptions s ON s.hostel_id = h.id
                   WHERE ho.user_id = $1
                   ORDER BY h.created_at DESC`,
                 [req.user.id]
@@ -39,7 +50,23 @@ const createHostel = async (req, res) => {
              VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
             [owner_id, hostel_name, hostel_code, address_line1, city, state, pincode]
         )
-        res.json({ success: true, message: 'Hostel created', data: { id: result[0].id } })
+
+        const hostelId = result[0].id;
+        
+        // Auto-create subscription record
+        const crypto = require('crypto');
+        const subId = crypto.randomUUID();
+        const startDate = new Date();
+        const nextBillingDate = new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days trial
+
+        await db.query(`
+            INSERT INTO subscriptions (
+                id, hostel_id, plan_name, plan_price, gst_percentage, gst_amount, total_amount, 
+                start_date, end_date, next_billing_date, status, billing_cycle
+            ) VALUES ($1, $2, 'HostelOS Professional', 999.00, 18.00, 179.82, 1178.82, $3, $4, $4, 'trialing', 'monthly')
+        `, [subId, hostelId, startDate, nextBillingDate]);
+
+        res.json({ success: true, message: 'Hostel created', data: { id: hostelId } })
     } catch (error) {
         console.error('[createHostel]', error)
         res.status(500).json({ success: false, error: error.message })
@@ -177,6 +204,18 @@ const createHostelWithOwner = async (req, res) => {
             }
         }
 
+        // Auto-create subscription record
+        const subId = crypto.randomUUID()
+        const startDate = new Date()
+        const nextBillingDate = new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000) // 7 days trial
+
+        await conn.query(`
+            INSERT INTO subscriptions (
+                id, hostel_id, plan_name, plan_price, gst_percentage, gst_amount, total_amount, 
+                start_date, end_date, next_billing_date, status, billing_cycle
+            ) VALUES ($1, $2, 'HostelOS Professional', 999.00, 18.00, 179.82, 1178.82, $3, $4, $4, 'trialing', 'monthly')
+        `, [subId, hostelResult[0].id, startDate, nextBillingDate])
+
         await conn.query('COMMIT')
         conn.release()
 
@@ -251,6 +290,17 @@ const onboardAdmin = async (req, res) => {
                 )
             }
         }
+        // Auto-create subscription record
+        const subId = crypto.randomUUID()
+        const startDate = new Date()
+        const nextBillingDate = new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000) // 7 days trial
+
+        await conn.query(`
+            INSERT INTO subscriptions (
+                id, hostel_id, plan_name, plan_price, gst_percentage, gst_amount, total_amount, 
+                start_date, end_date, next_billing_date, status, billing_cycle
+            ) VALUES ($1, $2, 'HostelOS Professional', 999.00, 18.00, 179.82, 1178.82, $3, $4, $4, 'trialing', 'monthly')
+        `, [subId, hostelId, startDate, nextBillingDate])
 
         await conn.query('COMMIT')
         conn.release()
@@ -354,6 +404,18 @@ const bulkCreateHostels = async (req, res) => {
                     }
                 }
             }
+
+            // Auto-create subscription record
+            const subId = crypto.randomUUID()
+            const startDate = new Date()
+            const nextBillingDate = new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000) // 7 days trial
+
+            await conn.query(`
+                INSERT INTO subscriptions (
+                    id, hostel_id, plan_name, plan_price, gst_percentage, gst_amount, total_amount, 
+                    start_date, end_date, next_billing_date, status, billing_cycle
+                ) VALUES ($1, $2, 'HostelOS Professional', 999.00, 18.00, 179.82, 1178.82, $3, $4, $4, 'trialing', 'monthly')
+            `, [subId, hostelId, startDate, nextBillingDate])
 
             results.push({
                 hostel_name,
