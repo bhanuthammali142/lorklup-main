@@ -50,13 +50,20 @@ const createCheckoutSession = async (req, res) => {
             return res.status(403).json({ success: false, error: 'Hostel ID not found in session' });
         }
 
-        // Fetch active settings for monthly price and GST percentage
+        const billingCycle = req.body.billing_cycle === 'yearly' ? 'yearly' : 'monthly';
+
+        // Fetch active settings for monthly/annual price and GST percentage
         let price = 999.00;
         let gstPercentage = 18.00;
 
-        const { rows: priceRows } = await db.query("SELECT value FROM platform_settings WHERE key = 'monthly_price'").catch(() => ({ rows: [] }));
+        const priceKey = billingCycle === 'yearly' ? 'annual_price' : 'monthly_price';
+        const defaultPrice = billingCycle === 'yearly' ? 9999.00 : 999.00;
+
+        const { rows: priceRows } = await db.query("SELECT value FROM platform_settings WHERE key = $1", [priceKey]).catch(() => ({ rows: [] }));
         if (priceRows.length > 0) {
-            price = parseFloat(priceRows[0].value) || 999.00;
+            price = parseFloat(priceRows[0].value) || defaultPrice;
+        } else {
+            price = defaultPrice;
         }
 
         const { rows: gstRows } = await db.query("SELECT value FROM platform_settings WHERE key = 'gst_percentage'").catch(() => ({ rows: [] }));
@@ -87,11 +94,23 @@ const createCheckoutSession = async (req, res) => {
             const subId = crypto.randomUUID();
             const { rows: [newSub] } = await db.query(`
                 INSERT INTO subscriptions (
-                    id, hostel_id, plan_name, plan_price, gst_percentage, gst_amount, total_amount, status
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending_payment')
+                    id, hostel_id, plan_name, plan_price, gst_percentage, gst_amount, total_amount, status, billing_cycle
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending_payment', $8)
                 RETURNING *
-            `, [subId, hostelId, 'HostelOS Professional', price, gstPercentage, gstAmount, totalAmount]);
+            `, [subId, hostelId, 'HostelOS Professional', price, gstPercentage, gstAmount, totalAmount, billingCycle]);
             subscription = newSub;
+        } else {
+            // Update subscription with target plan pricing and cycle before checkout payment
+            await db.query(`
+                UPDATE subscriptions
+                SET plan_price = $1,
+                    gst_percentage = $2,
+                    gst_amount = $3,
+                    total_amount = $4,
+                    billing_cycle = $5,
+                    updated_at = NOW()
+                WHERE id = $6
+            `, [price, gstPercentage, gstAmount, totalAmount, billingCycle, subscription.id]);
         }
 
         // Create a pending payment record using order ID as transaction_id temporarily
@@ -101,9 +120,9 @@ const createCheckoutSession = async (req, res) => {
         await db.query(`
             INSERT INTO payments (
                 id, hostel_id, subscription_id, payment_gateway, transaction_id, 
-                amount, gst_amount, total_amount, payment_status, invoice_number
-            ) VALUES ($1, $2, $3, 'razorpay', $4, $5, $6, $7, 'pending', $8)
-        `, [paymentId, hostelId, subscription.id, order.id, price, gstAmount, totalAmount, invoiceNumber]);
+                amount, gst_amount, total_amount, payment_status, invoice_number, billing_cycle
+            ) VALUES ($1, $2, $3, 'razorpay', $4, $5, $6, $7, 'pending', $8, $9)
+        `, [paymentId, hostelId, subscription.id, order.id, price, gstAmount, totalAmount, invoiceNumber, billingCycle]);
 
         res.json({
             success: true,
@@ -167,13 +186,14 @@ const verifySubscriptionPayment = async (req, res) => {
             [pendingPayment.subscription_id]
         );
 
-        // Calculate new next billing date (extend 30 days)
+        // Calculate new next billing date
         const now = new Date();
-        let newNextBillingDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        const durationDays = pendingPayment.billing_cycle === 'yearly' ? 365 : 30;
+        let newNextBillingDate = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
         
         // If current subscription is active and next billing date is in the future, extend from that date
         if (subscription && subscription.status === 'active' && subscription.next_billing_date && new Date(subscription.next_billing_date) > now) {
-            newNextBillingDate = new Date(new Date(subscription.next_billing_date).getTime() + 30 * 24 * 60 * 60 * 1000);
+            newNextBillingDate = new Date(new Date(subscription.next_billing_date).getTime() + durationDays * 24 * 60 * 60 * 1000);
         }
 
         // Update subscription
@@ -183,9 +203,10 @@ const verifySubscriptionPayment = async (req, res) => {
                 start_date = COALESCE(start_date, NOW()),
                 end_date = $1,
                 next_billing_date = $1,
+                billing_cycle = $3,
                 updated_at = NOW()
             WHERE id = $2
-        `, [newNextBillingDate, pendingPayment.subscription_id]);
+        `, [newNextBillingDate, pendingPayment.subscription_id, pendingPayment.billing_cycle || 'monthly']);
 
         // Insert invoice record
         const invoiceId = crypto.randomUUID();
@@ -207,7 +228,7 @@ const downloadInvoice = async (req, res) => {
         const invoiceId = req.params.id;
 
         const { rows: [invoice] } = await db.query(`
-            SELECT i.*, p.amount, p.gst_amount, p.total_amount, p.payment_date, 
+            SELECT i.*, p.amount, p.gst_amount, p.total_amount, p.payment_date, p.billing_cycle,
                    h.hostel_name, h.owner_name, h.owner_phone, ho.owner_name AS owner_name_from_db
             FROM invoices i
             JOIN payments p ON i.payment_id = p.id
@@ -441,8 +462,8 @@ const downloadInvoice = async (req, res) => {
                         <tbody>
                             <tr>
                                 <td>
-                                    <strong>HostelOS Professional Plan Subscription</strong><br>
-                                    <span style="font-size:12px; color:#718096;">SaaS Platform Access (30 days period)</span>
+                                    <strong>HostelOS Professional Plan Subscription (${invoice.billing_cycle === 'yearly' ? 'Annual' : 'Monthly'})</strong><br>
+                                    <span style="font-size:12px; color:#718096;">SaaS Platform Access (${invoice.billing_cycle === 'yearly' ? '365 days' : '30 days'} period)</span>
                                 </td>
                                 <td class="text-right">₹${Number(invoice.amount).toFixed(2)}</td>
                                 <td class="text-right">1</td>
@@ -521,10 +542,15 @@ const getBillingStats = async (req, res) => {
         );
 
         // Monthly Recurring Revenue (MRR)
-        // Calculated as active subscriptions * plan price (which is 999.00)
-        const { rows: [{ mrr }] } = await db.query(
-            "SELECT COALESCE(SUM(plan_price), 0) AS mrr FROM subscriptions WHERE status IN ('active', 'trialing')"
-        );
+        // For yearly subscriptions, monthly recurring value is plan_price / 12
+        const { rows: [{ mrr }] } = await db.query(`
+            SELECT COALESCE(SUM(
+                CASE WHEN billing_cycle = 'yearly' THEN plan_price / 12.0
+                ELSE plan_price END
+            ), 0) AS mrr 
+            FROM subscriptions 
+            WHERE status IN ('active', 'trialing')
+        `);
 
         // Recent platform transactions (SaaS)
         const { rows: recentTransactions } = await db.query(`

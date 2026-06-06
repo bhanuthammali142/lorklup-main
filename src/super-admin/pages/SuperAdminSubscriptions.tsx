@@ -13,6 +13,7 @@ export function SuperAdminSubscriptions() {
   // Settings Form State
   const [settingsForm, setSettingsForm] = useState({
     monthly_price: '999',
+    annual_price: '9999',
     gst_percentage: '18',
     trial_period_days: '7',
     grace_period_days: '5'
@@ -45,6 +46,7 @@ export function SuperAdminSubscriptions() {
       if (res.data) {
         setSettingsForm({
           monthly_price: res.data.monthly_price || '999',
+          annual_price: res.data.annual_price || '9999',
           gst_percentage: res.data.gst_percentage || '18',
           trial_period_days: res.data.trial_period_days || '7',
           grace_period_days: res.data.grace_period_days || '5'
@@ -220,7 +222,9 @@ export function SuperAdminSubscriptions() {
                           </td>
                           <td className="px-4 py-4">
                             <span className="font-bold text-slate-800">₹{Number(sub.total_amount).toFixed(2)}</span>
-                            <span className="text-xs text-slate-400 font-medium block">/{sub.plan_name}</span>
+                            <span className="text-xs text-slate-400 font-medium block">
+                              /{sub.billing_cycle === 'yearly' ? 'Yearly' : 'Monthly'}
+                            </span>
                           </td>
                           <td className="px-4 py-4 font-medium text-slate-500">
                             {sub.next_billing_date ? new Date(sub.next_billing_date).toLocaleDateString('en-IN', {
@@ -288,6 +292,17 @@ export function SuperAdminSubscriptions() {
                   required
                   value={settingsForm.monthly_price}
                   onChange={(e) => setSettingsForm({ ...settingsForm, monthly_price: e.target.value })}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Annual Base Fee (₹)</label>
+                <input
+                  type="number"
+                  required
+                  value={settingsForm.annual_price}
+                  onChange={(e) => setSettingsForm({ ...settingsForm, annual_price: e.target.value })}
                   className="w-full px-4 py-3 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold"
                 />
               </div>

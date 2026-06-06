@@ -442,10 +442,10 @@ export const apiBilling = {
   getMySubscription: () =>
     request<{ success: boolean; data: any }>('/api/billing/my-subscription'),
 
-  subscribe: (planId: string) =>
+  subscribe: (planId: string, billingCycle: 'monthly' | 'yearly' = 'monthly') =>
     request<{ success: boolean; data: any }>('/api/billing/subscribe', {
       method: 'POST',
-      body: JSON.stringify({ plan_id: planId }),
+      body: JSON.stringify({ plan_id: planId, billing_cycle: billingCycle }),
     }),
 
   verify: (data: any) =>

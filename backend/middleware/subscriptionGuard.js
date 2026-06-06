@@ -119,6 +119,7 @@ const subscriptionGuard = async (req, res, next) => {
       end_date: subscription.end_date,
       next_billing_date: subscription.next_billing_date,
       status: subscription.status,
+      billing_cycle: subscription.billing_cycle || 'monthly',
       isExpired,
       isPastGracePeriod,
       daysRemaining

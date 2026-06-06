@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 
 export function Billing() {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedCycle, setSelectedCycle] = useState<'monthly' | 'yearly'>('monthly');
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['my-subscription'],
@@ -19,14 +20,15 @@ export function Billing() {
   const handleSubscribe = async () => {
     setIsProcessing(true);
     try {
-      const res = await apiBilling.subscribe(sub?.id || 'plan_professional');
+      const sub = data?.subscription;
+      const res = await apiBilling.subscribe(sub?.id || 'plan_professional', selectedCycle);
       
       const options = {
         key: res.data.key_id,
         amount: res.data.amount,
         currency: res.data.currency,
         name: 'HostelOS Platform',
-        description: `HostelOS Professional - Monthly Subscription`,
+        description: `HostelOS Professional - ${selectedCycle === 'yearly' ? 'Annual' : 'Monthly'} Subscription`,
         order_id: res.data.order_id,
         handler: async function (response: any) {
           try {
@@ -199,11 +201,42 @@ export function Billing() {
               <div className="bg-slate-50 p-4 rounded-2xl">
                 <span className="text-xs font-bold text-slate-400 block mb-1">Base Price</span>
                 <span className="text-xl font-extrabold text-slate-800">₹{Number(sub.plan_price).toFixed(2)}</span>
-                <span className="text-xs text-slate-500 font-medium">/mo</span>
+                <span className="text-xs text-slate-500 font-medium">/{sub.billing_cycle === 'yearly' ? 'yr' : 'mo'}</span>
               </div>
               <div className="bg-slate-50 p-4 rounded-2xl">
                 <span className="text-xs font-bold text-slate-400 block mb-1">GST Collected (18%)</span>
                 <span className="text-xl font-extrabold text-slate-800">₹{Number(sub.gst_amount).toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Select Renewal Billing Frequency</span>
+              <div className="grid grid-cols-2 gap-2 bg-slate-100 p-1.5 rounded-2xl">
+                <button
+                  type="button"
+                  onClick={() => setSelectedCycle('monthly')}
+                  className={`py-2 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all ${
+                    selectedCycle === 'monthly'
+                      ? 'bg-white text-indigo-600 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Monthly Plan (₹999 + GST)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedCycle('yearly')}
+                  className={`py-2 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 ${
+                    selectedCycle === 'yearly'
+                      ? 'bg-white text-indigo-600 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Yearly Plan (₹9,999 + GST)
+                  <span className="bg-emerald-500 text-white font-extrabold px-1.5 py-0.5 rounded-lg text-[9px] uppercase tracking-wide">
+                    Save ~16%
+                  </span>
+                </button>
               </div>
             </div>
 
@@ -247,7 +280,7 @@ export function Billing() {
               {isProcessing ? 'Connecting Gateway...' : isExpired || isPastGracePeriod ? 'Renew Subscription Now' : 'Extend Subscription'}
             </button>
             <p className="text-center text-xs text-slate-400 mt-2 font-medium">
-              Secured payments powered by Razorpay. Price: ₹999 + 18% GST = ₹1,178.82 / month
+              Secured payments powered by Razorpay. Price: {selectedCycle === 'yearly' ? '₹9,999 + 18% GST = ₹11,798.82 / year' : '₹999 + 18% GST = ₹1,178.82 / month'}
             </p>
           </div>
         </div>
