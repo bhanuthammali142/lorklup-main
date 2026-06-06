@@ -36,6 +36,28 @@ async function verifyToken(req, res, next) {
     // Keep token values aligned with the database role
     decoded.role = rows[0].role
 
+    // Dynamically resolve hostel_id from database to avoid stale JWT token issues
+    let dbHostelId = null
+    if (decoded.role === 'admin') {
+      const { rows: hostelRows } = await db.query(
+        'SELECT h.id AS hostel_id FROM hostels h JOIN hostel_owners ho ON ho.id = h.owner_id WHERE ho.user_id = $1 LIMIT 1',
+        [decoded.id]
+      )
+      if (hostelRows.length > 0) {
+        dbHostelId = hostelRows[0].hostel_id
+      }
+    } else if (decoded.role === 'student') {
+      const { rows: studentRows } = await db.query(
+        'SELECT hostel_id FROM students WHERE user_id = $1 LIMIT 1',
+        [decoded.id]
+      )
+      if (studentRows.length > 0 && studentRows[0].hostel_id) {
+        dbHostelId = studentRows[0].hostel_id
+      }
+    }
+
+    decoded.hostel_id = dbHostelId
+
     req.user = decoded
     next()
   } catch (err) {
