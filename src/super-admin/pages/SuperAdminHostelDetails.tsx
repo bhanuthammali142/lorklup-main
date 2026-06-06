@@ -368,28 +368,32 @@ export function SuperAdminHostelDetails() {
                               <span className="text-[9px] font-bold text-slate-400 uppercase bg-white px-1.5 py-0.5 rounded border border-slate-100">{room.type}</span>
                             </div>
                             <div className="flex flex-wrap gap-1.5">
-                              {bedList.map((bed: any) => (
-                                <div
-                                  key={bed.id}
-                                  title={`Bed ${bed.bed_number} - ${bed.status}`}
-                                  className={`flex items-center justify-center h-8 w-8 rounded-lg text-xs font-bold border transition ${
-                                    bed.status === 'available' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                    bed.status === 'maintenance' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                                    'bg-slate-200 text-slate-450 border-slate-300 shadow-inner'
-                                  }`}
-                                >
-                                  {bed.bed_number.replace(/[^0-9]/g, '') || bed.bed_number.charAt(0)}
-                                </div>
-                              ))}
+                              {bedList
+                                .filter((b: any) => b && b.bed_number)
+                                .map((bed: any) => (
+                                  <div
+                                    key={bed.id || Math.random()}
+                                    title={`Bed ${bed.bed_number || 'Unknown'} - ${bed.status || 'Unknown'}`}
+                                    className={`flex items-center justify-center h-8 w-8 rounded-lg text-xs font-bold border transition ${
+                                      bed.status === 'available' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                      bed.status === 'maintenance' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                      'bg-slate-200 text-slate-450 border-slate-300 shadow-inner'
+                                    }`}
+                                  >
+                                    {(bed.bed_number || '').replace(/[^0-9]/g, '') || (bed.bed_number || '').charAt(0) || '?'}
+                                  </div>
+                                ))}
                             </div>
                             <div className="mt-3 w-full bg-slate-200 h-1 rounded-full overflow-hidden flex">
-                              {bedList.map((bed: any, idx: number) => (
-                                <div
-                                  key={bed.id}
-                                  className={`h-full flex-1 ${bed.status === 'available' ? 'bg-transparent' : bed.status === 'maintenance' ? 'bg-amber-400' : 'bg-slate-400'}`}
-                                  style={{ marginLeft: idx > 0 ? '1px' : '0' }}
-                                />
-                              ))}
+                              {bedList
+                                .filter((b: any) => b && b.id)
+                                .map((bed: any, idx: number) => (
+                                  <div
+                                    key={bed.id || idx}
+                                    className={`h-full flex-1 ${bed.status === 'available' ? 'bg-transparent' : bed.status === 'maintenance' ? 'bg-amber-400' : 'bg-slate-400'}`}
+                                    style={{ marginLeft: idx > 0 ? '1px' : '0' }}
+                                  />
+                                ))}
                             </div>
                           </div>
                         )

@@ -82,7 +82,7 @@ const getAllUsers = async (req, res) => {
             SELECT u.id, u.email, u.role, u.is_active, u.last_login, u.created_at,
                    COALESCE(sa.name, ho.owner_name) AS name,
                    ho.owner_phone AS phone,
-                   h.hostel_name
+                   STRING_AGG(h.hostel_name, ', ') AS hostel_name
             FROM users u
             LEFT JOIN super_admins sa ON sa.user_id = u.id
             LEFT JOIN hostel_owners ho ON ho.user_id = u.id
@@ -98,6 +98,7 @@ const getAllUsers = async (req, res) => {
             query += ` AND (u.email ILIKE $${params.length + 1} OR COALESCE(sa.name, ho.owner_name) ILIKE $${params.length + 2})`;
             params.push(`%${search}%`, `%${search}%`);
         }
+        query += ' GROUP BY u.id, sa.name, ho.owner_name, ho.owner_phone';
         query += ' ORDER BY u.created_at DESC';
 
         const { rows: users } = await db.query(query, params);

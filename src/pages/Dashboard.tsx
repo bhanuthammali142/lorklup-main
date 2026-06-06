@@ -292,29 +292,34 @@ export function Dashboard() {
                              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider bg-white px-1.5 py-0.5 rounded border border-slate-100">{room.type}</span>
                           </div>
                           <div className="flex flex-wrap gap-1.5">
-                            {room.beds.sort((a: any, b: any) => a.bed_number.localeCompare(b.bed_number)).map((bed: any) => (
-                              <div 
-                                key={bed.id} 
-                                title={`Bed ${bed.bed_number} - ${bed.status}`}
-                                className={`flex items-center justify-center h-7 w-7 sm:w-8 sm:h-8 rounded-lg text-xs font-bold transition-all shadow-sm ${
-                                  bed.status === 'available' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200 group-hover:bg-emerald-500 group-hover:text-white cursor-help' : 
-                                  bed.status === 'maintenance' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
-                                  'bg-slate-200 text-slate-400 border border-slate-300'
-                                }`}
-                              >
-                                {bed.bed_number.replace(/[^0-9]/g, '') || bed.bed_number.charAt(0)}
-                              </div>
-                            ))}
+                            {(room.beds || [])
+                              .filter((b: any) => b && b.bed_number)
+                              .sort((a: any, b: any) => (a.bed_number || '').localeCompare(b.bed_number || ''))
+                              .map((bed: any) => (
+                                <div 
+                                  key={bed.id || Math.random()} 
+                                  title={`Bed ${bed.bed_number || 'Unknown'} - ${bed.status || 'Unknown'}`}
+                                  className={`flex items-center justify-center h-7 w-7 sm:w-8 sm:h-8 rounded-lg text-xs font-bold transition-all shadow-sm ${
+                                    bed.status === 'available' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200 group-hover:bg-emerald-500 group-hover:text-white cursor-help' : 
+                                    bed.status === 'maintenance' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
+                                    'bg-slate-200 text-slate-400 border border-slate-300'
+                                  }`}
+                                >
+                                  {(bed.bed_number || '').replace(/[^0-9]/g, '') || (bed.bed_number || '').charAt(0) || '?'}
+                                </div>
+                              ))}
                           </div>
                           {/* Occupancy Progress bar underneath */}
                           <div className="mt-3 w-full bg-slate-200 h-1.5 rounded-full overflow-hidden flex">
-                            {room.beds.map((bed: any, i: number) => (
-                               <div 
-                                 key={bed.id} 
-                                 className={`h-full flex-1 ${bed.status === 'available' ? 'bg-transparent' : bed.status === 'maintenance' ? 'bg-amber-400' : 'bg-slate-400'}`} 
-                                 style={{ marginLeft: i > 0 ? '1px' : '0' }}
-                               />
-                            ))}
+                            {(room.beds || [])
+                              .filter((b: any) => b && b.id)
+                              .map((bed: any, i: number) => (
+                                 <div 
+                                   key={bed.id || i} 
+                                   className={`h-full flex-1 ${bed.status === 'available' ? 'bg-transparent' : bed.status === 'maintenance' ? 'bg-amber-400' : 'bg-slate-400'}`} 
+                                   style={{ marginLeft: i > 0 ? '1px' : '0' }}
+                                 />
+                              ))}
                           </div>
                         </div>
                       ))}

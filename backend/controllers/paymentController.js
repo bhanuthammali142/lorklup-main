@@ -127,9 +127,9 @@ const verifyPayment = async (req, res) => {
     // Update fee status
     await db.query(
       `UPDATE fees 
-       SET status = 'paid', paid_amount = $1, paid_at = NOW()
-       WHERE id = $2`,
-      [fee.due_amount, fee_id]
+       SET status = 'paid', paid_amount = amount, due_amount = 0, paid_at = NOW()
+       WHERE id = $1`,
+      [fee_id]
     );
 
     // Award points for on-time payment

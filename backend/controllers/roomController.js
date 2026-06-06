@@ -10,7 +10,7 @@ async function getRooms(req, res) {
       `SELECT r.*, 
               COUNT(b.id) AS total_beds,
               SUM(CASE WHEN b.status='occupied' THEN 1 ELSE 0 END) AS occupied_beds,
-              json_agg(json_build_object('id',b.id,'bed_number',b.bed_number,'status',b.status)) AS beds
+              COALESCE(json_agg(json_build_object('id',b.id,'bed_number',b.bed_number,'status',b.status)) FILTER (WHERE b.id IS NOT NULL), '[]'::json) AS beds
        FROM rooms r LEFT JOIN beds b ON b.room_id = r.id
        WHERE r.hostel_id = $1 GROUP BY r.id ORDER BY r.room_number`,
       [hostelId]

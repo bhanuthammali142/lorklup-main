@@ -112,7 +112,22 @@ function sanitizeObject(obj) {
     const sanitizedKey = typeof key === 'string' ? sanitizeString(key) : key;
 
     if (typeof value === 'string') {
-      sanitized[sanitizedKey] = sanitizeString(value);
+      const lowerKey = String(sanitizedKey).toLowerCase();
+      // Skip HTML escaping for passwords, emails, tokens, secrets, and payment signatures to prevent corruption
+      if (
+        lowerKey.includes('password') ||
+        lowerKey.includes('email') ||
+        lowerKey.includes('token') ||
+        lowerKey.includes('signature') ||
+        lowerKey.includes('key') ||
+        lowerKey.includes('secret') ||
+        lowerKey.includes('razorpay') ||
+        lowerKey === 'transaction_id'
+      ) {
+        sanitized[sanitizedKey] = validator.trim(value);
+      } else {
+        sanitized[sanitizedKey] = sanitizeString(value);
+      }
     } else if (typeof value === 'object' && value !== null) {
       sanitized[sanitizedKey] = sanitizeObject(value);
     } else {
