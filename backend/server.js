@@ -23,6 +23,15 @@ if (!process.env.JWT_SECRET) {
   process.exit(1)
 }
 
+if (process.env.JWT_SECRET.length < 32) {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('❌ FATAL: JWT_SECRET is too weak! It must be at least 32 characters long in production.')
+    process.exit(1)
+  } else {
+    console.warn('⚠️ WARNING: JWT_SECRET is too weak (less than 32 characters)! Generate a stronger secret for production.')
+  }
+}
+
 // Security: Helmet middleware for security headers
 app.use(helmet({
   contentSecurityPolicy: {

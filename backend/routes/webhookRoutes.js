@@ -7,7 +7,11 @@ const db = require('../config/db');
 router.post('/razorpay', express.json(), async (req, res) => {
     try {
         const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
-        
+        if (!secret) {
+            console.error('❌ Security alert: RAZORPAY_WEBHOOK_SECRET is not configured.');
+            return res.status(500).send('Webhook signature verification is not configured.');
+        }
+
         const signature = req.headers['x-razorpay-signature'];
         if (!signature) {
             return res.status(400).send('Signature missing');
@@ -15,7 +19,7 @@ router.post('/razorpay', express.json(), async (req, res) => {
 
         const bodyString = JSON.stringify(req.body);
         const expectedSignature = crypto
-            .createHmac('sha256', secret || 'dummy_webhook_secret')
+            .createHmac('sha256', secret)
             .update(bodyString)
             .digest('hex');
 
