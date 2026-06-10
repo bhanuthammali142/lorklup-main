@@ -16,6 +16,9 @@ const webhookRoutes = require('./routes/webhookRoutes')
 
 const app = express()
 
+// Trust reverse proxy (Nginx) for correct client IP address in rate limiting
+app.set('trust proxy', 1)
+
 // Security: Validate JWT_SECRET on startup
 if (!process.env.JWT_SECRET) {
   console.error('❌ FATAL: JWT_SECRET environment variable is not set!')
