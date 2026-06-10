@@ -108,8 +108,8 @@ export function StudentDashboard() {
                   {studentData.full_name || 'Student'}
                 </h1>
                 <p className="text-slate-400 text-xs mt-0.5">
-                  Room <strong className="text-slate-200">{studentData.rooms?.room_number ?? 'Unassigned'}</strong> · Bed{' '}
-                  <strong className="text-slate-200">{studentData.beds?.bed_number ?? '—'}</strong>
+                  Room <strong className="text-slate-200">{studentData.rooms?.room_number ?? studentData.room_number ?? 'Unassigned'}</strong> · Bed{' '}
+                  <strong className="text-slate-200">{studentData.beds?.bed_number ?? studentData.bed_number ?? '—'}</strong>
                 </p>
               </div>
             </div>

@@ -204,7 +204,7 @@ export function StudentComplaints() {
                   <select
                     value={category}
                     onChange={e => setCategory(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:ring-2 focus:ring-rose-500 focus:outline-none"
                   >
                     <option value="">Select a category...</option>
                     {CATEGORY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
@@ -219,7 +219,7 @@ export function StudentComplaints() {
                     value={title}
                     onChange={e => setTitle(e.target.value)}
                     placeholder="e.g. AC not working in room"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:ring-2 focus:ring-rose-500 focus:outline-none"
                   />
                 </div>
 
@@ -253,7 +253,7 @@ export function StudentComplaints() {
                     onChange={e => setDescription(e.target.value)}
                     rows={4}
                     placeholder="Describe the issue in detail: what, where, when..."
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-rose-500 focus:outline-none resize-none"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:ring-2 focus:ring-rose-500 focus:outline-none resize-none"
                   />
                 </div>
 

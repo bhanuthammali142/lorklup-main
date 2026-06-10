@@ -190,7 +190,7 @@ export function StudentLayout() {
               <p className="text-[10px] text-blue-400 font-semibold truncate mt-0.5">{studentData.hostel_name}</p>
             )}
             <p className="text-[11px] text-slate-400 truncate mt-0.5">
-              {studentData?.rooms ? `${studentData.rooms.floor || 'Floor'} · Rm ${studentData.rooms.room_number}` : 'Room —'} · Bed {studentData?.beds?.bed_number ?? '—'}
+              {studentData?.rooms || studentData?.room_number ? `${studentData.rooms?.floor || studentData.floor || 'Floor'} · Rm ${studentData.rooms?.room_number ?? studentData.room_number}` : 'Room —'} · Bed {studentData?.beds?.bed_number ?? studentData?.bed_number ?? '—'}
             </p>
           </div>
         </div>
