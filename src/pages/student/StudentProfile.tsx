@@ -94,6 +94,10 @@ export function StudentProfile() {
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
               <Bed className="h-3.5 w-3.5" /> Hostel Allocation
             </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+              <InfoField icon={Building} label="Hostel Name" value={studentData.hostel_name ?? 'N/A'} />
+              <InfoField icon={Building} label="Room Type" value={studentData.rooms?.type ?? studentData.room_type ?? 'N/A'} />
+            </div>
             <div className="bg-slate-900 text-white rounded-2xl p-5 flex flex-col sm:flex-row gap-6 lg:gap-10 items-center justify-between">
               <div className="flex flex-col sm:flex-row gap-6 lg:gap-10 items-center w-full">
                 <div className="text-center sm:text-left">

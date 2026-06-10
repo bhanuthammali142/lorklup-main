@@ -10,16 +10,32 @@ async function getStudents(req, res) {
   try {
     const { rows: rows } = await pool.query(
       `SELECT s.*,
-              r.room_number, r.type AS room_type, r.monthly_fee,
-              b.bed_number
+              r.room_number, r.floor, r.type AS room_type, r.monthly_fee,
+              b.bed_number,
+              h.hostel_name
        FROM students s
        LEFT JOIN rooms r ON r.id = s.room_id
        LEFT JOIN beds  b ON b.id = s.bed_id
+       LEFT JOIN hostels h ON h.id = s.hostel_id
        WHERE s.hostel_id = $1 AND s.is_active = TRUE
        ORDER BY s.created_at DESC`,
       [hostelId]
     )
-    res.json(rows)
+
+    // Map rows to include nested rooms and beds for the frontend types
+    const mappedRows = rows.map(row => ({
+      ...row,
+      rooms: row.room_id ? {
+        room_number: row.room_number,
+        floor: row.floor,
+        type: row.room_type
+      } : null,
+      beds: row.bed_id ? {
+        bed_number: row.bed_number
+      } : null
+    }))
+
+    res.json(mappedRows)
   } catch (err) {
     console.error('[getStudents]', err)
     res.status(500).json({ error: 'Server error' })
@@ -186,14 +202,34 @@ async function addStudent(req, res) {
     }
 
     const { rows: rows } = await pool.query(
-      `SELECT s.*, r.room_number, b.bed_number
+      `SELECT s.*,
+              r.room_number, r.floor, r.type AS room_type, r.monthly_fee,
+              b.bed_number,
+              h.hostel_name
          FROM students s
          LEFT JOIN rooms r ON r.id = s.room_id
          LEFT JOIN beds  b ON b.id = s.bed_id
+         LEFT JOIN hostels h ON h.id = s.hostel_id
         WHERE s.id = $1`,
       [studentId]
     )
-    res.status(201).json({ student: rows[0], credentials })
+
+    let student = rows[0] || null
+    if (student) {
+      student = {
+        ...student,
+        rooms: student.room_id ? {
+          room_number: student.room_number,
+          floor: student.floor,
+          type: student.room_type
+        } : null,
+        beds: student.bed_id ? {
+          bed_number: student.bed_number
+        } : null
+      }
+    }
+
+    res.status(201).json({ student, credentials })
   } catch (err) {
     await conn.query('ROLLBACK')
     conn.release()

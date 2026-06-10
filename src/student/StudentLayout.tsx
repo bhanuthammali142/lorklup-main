@@ -17,6 +17,7 @@ import {
   Lock,
   Loader2,
   Zap,
+  Calendar,
 } from 'lucide-react'
 import { useAuth } from '../lib/AuthContext'
 import { NotificationBell } from '../components/NotificationBell'
@@ -185,7 +186,10 @@ export function StudentLayout() {
           </div>
           <div className="min-w-0">
             <p className="text-sm font-bold text-white truncate">{studentData?.full_name || 'Student'}</p>
-            <p className="text-[11px] text-slate-400 truncate">
+            {studentData?.hostel_name && (
+              <p className="text-[10px] text-blue-400 font-semibold truncate mt-0.5">{studentData.hostel_name}</p>
+            )}
+            <p className="text-[11px] text-slate-400 truncate mt-0.5">
               {studentData?.rooms ? `${studentData.rooms.floor || 'Floor'} · Rm ${studentData.rooms.room_number}` : 'Room —'} · Bed {studentData?.beds?.bed_number ?? '—'}
             </p>
           </div>
