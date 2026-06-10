@@ -103,10 +103,10 @@ export function StudentFees() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-          <Wallet className="h-8 w-8 text-emerald-600" /> My Fees
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white flex items-center gap-2">
+          <Wallet className="h-8 w-8 text-emerald-500" /> My Fees
         </h1>
-        <p className="text-slate-500 mt-1 text-sm sm:text-base">Track your due payments and view payment history.</p>
+        <p className="text-slate-400 mt-1 text-sm sm:text-base">Track your due payments and view payment history.</p>
       </div>
 
       <div className="bg-slate-900 text-white rounded-2xl p-6 sm:p-8 shadow-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
@@ -129,7 +129,7 @@ export function StudentFees() {
       </div>
 
       <div className="mt-8">
-        <h3 className="text-lg font-bold text-slate-900 mb-4">Fee History</h3>
+        <h3 className="text-lg font-bold text-white mb-4">Fee History</h3>
         {loading ? (
           <div className="flex items-center justify-center h-32 gap-2 text-slate-400">
             <Loader2 className="animate-spin h-5 w-5" /> Loading...

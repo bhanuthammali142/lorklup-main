@@ -77,10 +77,10 @@ export function StudentRewards() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+          <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
             <Zap className="h-8 w-8 text-amber-500" /> Rewards & Points
           </h1>
-          <p className="text-slate-500 mt-1">Earn points for good behavior. Redeem for rewards!</p>
+          <p className="text-slate-400 mt-1">Earn points for good behavior. Redeem for rewards!</p>
         </div>
       </div>
 
@@ -123,8 +123,8 @@ export function StudentRewards() {
 
       {/* Available Rewards */}
       <div>
-        <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
-          <Gift className="h-6 w-6 text-emerald-600" /> Available Rewards
+        <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+          <Gift className="h-6 w-6 text-emerald-500" /> Available Rewards
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {AVAILABLE_REWARDS.map((reward) => {
@@ -164,8 +164,8 @@ export function StudentRewards() {
 
       {/* Monthly Leaderboard */}
       <div>
-        <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
-          <Award className="h-6 w-6 text-blue-600" /> Monthly Leaderboard
+        <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+          <Award className="h-6 w-6 text-blue-400" /> Monthly Leaderboard
         </h3>
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           {leaderboardLoading ? (
@@ -221,7 +221,7 @@ export function StudentRewards() {
       {/* Points History */}
       {history && history.length > 0 && (
         <div>
-          <h3 className="text-lg font-bold text-slate-900 mb-3">Recent Activity</h3>
+          <h3 className="text-lg font-bold text-white mb-3">Recent Activity</h3>
           <div className="space-y-2">
             {history.slice(0, 10).map((entry: any) => (
               <div key={entry.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">

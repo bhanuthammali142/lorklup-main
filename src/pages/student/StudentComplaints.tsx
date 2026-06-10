@@ -100,10 +100,10 @@ export function StudentComplaints() {
     <div className="space-y-6 animate-in fade-in duration-500 pb-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 flex items-center gap-2">
+          <h1 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2">
             <MessageSquareWarning className="h-7 w-7 text-rose-500" /> My Complaints
           </h1>
-          <p className="text-slate-500 mt-1 text-sm">Report issues and track resolution status.</p>
+          <p className="text-slate-400 mt-1 text-sm">Report issues and track resolution status.</p>
         </div>
         <button
           onClick={() => setShowForm(true)}

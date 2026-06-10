@@ -67,10 +67,10 @@ export function StudentFoodMenu() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 flex items-center gap-2">
-          <UtensilsCrossed className="h-7 w-7 text-emerald-600" /> Food Menu
+        <h1 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2">
+          <UtensilsCrossed className="h-7 w-7 text-emerald-500" /> Food Menu
         </h1>
-        <p className="text-slate-500 mt-1 text-sm">Weekly hostel meal schedule. Times may vary.</p>
+        <p className="text-slate-400 mt-1 text-sm">Weekly hostel meal schedule. Times may vary.</p>
       </div>
 
       {/* Day Selector */}
@@ -108,7 +108,7 @@ export function StudentFoodMenu() {
       {/* Selected Day Header */}
       <div className="flex items-center gap-3">
         <div>
-          <h2 className="text-xl font-black text-slate-900">{dayName}</h2>
+          <h2 className="text-xl font-black text-white">{dayName}</h2>
           {selectedDay === todayIdx && (
             <span className="inline-flex items-center gap-1 text-emerald-700 bg-emerald-100 text-xs font-bold px-2.5 py-0.5 rounded-full">
               📅 Today's Menu

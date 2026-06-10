@@ -58,10 +58,10 @@ export function StudentProfile() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-          <User className="h-8 w-8 text-blue-600" /> My Profile
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white flex items-center gap-2">
+          <User className="h-8 w-8 text-blue-500" /> My Profile
         </h1>
-        <p className="text-slate-500 mt-1 text-sm sm:text-base">Your personal details and hostel information.</p>
+        <p className="text-slate-400 mt-1 text-sm sm:text-base">Your personal details and hostel information.</p>
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
