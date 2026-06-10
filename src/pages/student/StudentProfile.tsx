@@ -1,6 +1,7 @@
 import React from 'react'
-import { User, LogOut, FileText, Phone, Building, Bed, GraduationCap, Calendar, Hash, Mail, Shield } from 'lucide-react'
+import { User, LogOut, FileText, Phone, Building, Bed, GraduationCap, Calendar, Hash, Mail, Shield, Eye, EyeOff, CheckCircle2, Loader2, Key, X } from 'lucide-react'
 import { useAuth } from '../../lib/AuthContext'
+import toast from 'react-hot-toast'
 
 function InfoField({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
   return (
@@ -18,6 +19,35 @@ function InfoField({ icon: Icon, label, value }: { icon: React.ElementType; labe
 
 export function StudentProfile() {
   const { studentData, signOut, user } = useAuth()
+  const [showPasswordModal, setShowPasswordModal] = React.useState(false)
+  const [newPassword, setNewPassword] = React.useState('')
+  const [confirmPassword, setConfirmPassword] = React.useState('')
+  const [showPassword, setShowPassword] = React.useState(false)
+  const [savingPassword, setSavingPassword] = React.useState(false)
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (newPassword.length < 8) {
+      return toast.error('Password must be at least 8 characters')
+    }
+    if (newPassword !== confirmPassword) {
+      return toast.error('Passwords do not match')
+    }
+
+    setSavingPassword(true)
+    try {
+      const { apiAuth } = await import('../../lib/api-client')
+      await apiAuth.changePassword(newPassword)
+      toast.success('Password updated successfully!')
+      setNewPassword('')
+      setConfirmPassword('')
+      setShowPasswordModal(false)
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update password')
+    } finally {
+      setSavingPassword(false)
+    }
+  }
 
   if (!studentData) return null
 
@@ -128,14 +158,114 @@ export function StudentProfile() {
             </div>
           </div>
 
-          {/* Sign Out */}
-          <div className="pt-2 border-t border-slate-100">
-            <button onClick={signOut} className="w-full flex items-center justify-center gap-2 bg-rose-50 text-rose-600 font-bold py-3 px-4 rounded-xl hover:bg-rose-100 transition-colors border border-rose-100">
+          {/* Sign Out & Password Change */}
+          <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={() => setShowPasswordModal(true)}
+              className="flex-1 flex items-center justify-center gap-2 bg-slate-50 text-slate-700 font-bold py-3 px-4 rounded-xl hover:bg-slate-100 transition-colors border border-slate-200"
+            >
+              <Key className="h-5 w-5" /> Change Password
+            </button>
+            <button onClick={signOut} className="flex-1 flex items-center justify-center gap-2 bg-rose-50 text-rose-600 font-bold py-3 px-4 rounded-xl hover:bg-rose-100 transition-colors border border-rose-100">
               <LogOut className="h-5 w-5" /> Sign Out from Device
             </button>
           </div>
         </div>
       </div>
+
+      {/* Change Password Modal */}
+      {showPasswordModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 sm:zoom-in-95">
+            <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-5 flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-black text-white">Change Password</h3>
+                <p className="text-slate-400 text-xs mt-0.5">Set a new secure password</p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowPasswordModal(false)
+                  setNewPassword('')
+                  setConfirmPassword('')
+                }}
+                className="h-8 w-8 bg-slate-700 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-600 hover:text-white transition"
+                aria-label="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <form onSubmit={handlePasswordChange} className="space-y-4">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1.5">New Password</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="At least 8 characters"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none pr-10"
+                      minLength={8}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1.5">Confirm Password</label>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Repeat your new password"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    minLength={8}
+                    required
+                  />
+                </div>
+
+                {newPassword && confirmPassword && newPassword !== confirmPassword && (
+                  <p className="text-xs text-rose-500 font-medium">Passwords do not match</p>
+                )}
+
+                {newPassword.length > 0 && newPassword.length < 8 && (
+                  <p className="text-xs text-amber-500 font-medium">Password must be at least 8 characters</p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={newPassword.length < 8 || newPassword !== confirmPassword || savingPassword}
+                  className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-3 rounded-xl flex items-center justify-center gap-2 transition shadow-xl shadow-slate-900/20 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {savingPassword ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-4 w-4" />
+                      Set New Password
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
