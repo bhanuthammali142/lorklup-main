@@ -42,7 +42,6 @@ const NAV = [
   { name: 'Complaints',  href: '/student/complaints',     icon: MessageSquareWarning, end: false },
   { name: 'Notices',     href: '/student/announcements',  icon: Bell,                 end: false },
   { name: 'Food Menu',   href: '/student/food',           icon: UtensilsCrossed,      end: false },
-  { name: 'Rewards',     href: '/student/rewards',        icon: Zap,                  end: false },
   { name: 'Profile',     href: '/student/profile',        icon: User,                 end: false },
 ]
 

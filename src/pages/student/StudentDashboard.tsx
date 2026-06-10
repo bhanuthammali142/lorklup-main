@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   Wallet, Bell, Calendar, Clock, CheckCircle2,
   ArrowRight, UtensilsCrossed, MessageSquareWarning,
-  Sparkles, ChevronRight, Award, ShieldAlert
+  Sparkles, ChevronRight, ShieldAlert
 } from 'lucide-react'
 import { useAuth } from '../../lib/AuthContext'
 import { apiFees, apiAnnouncements, apiAttendance, apiComplaints } from '../../lib/api-client'
@@ -155,13 +155,6 @@ export function StudentDashboard() {
               sub: openComplaints === 0 ? 'All Resolved' : 'Under Investigation',
               icon: MessageSquareWarning,
               color: openComplaints > 0 ? 'text-amber-400 bg-amber-500/10 border-amber-500/20' : 'text-slate-400 bg-slate-900 border-slate-800',
-            },
-            {
-              label: 'Reward Points',
-              value: '450',
-              sub: 'Gold Tier Boarder',
-              icon: Award,
-              color: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
             },
           ].map((card, i) => {
             const Icon = card.icon
@@ -311,7 +304,6 @@ export function StudentDashboard() {
                 { label: 'View Fee History', path: '/student/fees', icon: Wallet, color: 'text-blue-400 bg-blue-500/10' },
                 { label: "Check-in & Attendance", path: '/student/attendance', icon: Calendar, color: 'text-emerald-400 bg-emerald-500/10' },
                 { label: 'File Complaint Ticket', path: '/student/complaints', icon: MessageSquareWarning, color: 'text-rose-400 bg-rose-500/10' },
-                { label: 'Redeem Boarder Rewards', path: '/student/rewards', icon: Award, color: 'text-indigo-400 bg-indigo-500/10' },
               ].map((action, i) => {
                 const Icon = action.icon
                 return (

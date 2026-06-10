@@ -34,7 +34,6 @@ const StudentComplaints    = lazy(() => import('./pages/student/StudentComplaint
 const StudentAnnouncements = lazy(() => import('./pages/student/StudentAnnouncements').then(m => ({ default: m.StudentAnnouncements })))
 const StudentFoodMenu      = lazy(() => import('./pages/student/StudentFoodMenu').then(m => ({ default: m.StudentFoodMenu })))
 const StudentProfile       = lazy(() => import('./pages/student/StudentProfile').then(m => ({ default: m.StudentProfile })))
-const StudentRewards       = lazy(() => import('./pages/student/StudentRewards').then(m => ({ default: m.StudentRewards })))
 
 // ── Super Admin (lazy) ───────────────────────────────────────────────────────
 const SuperAdminLayout        = lazy(() => import('./super-admin/SuperAdminLayout').then(m => ({ default: m.SuperAdminLayout })))
@@ -108,7 +107,6 @@ function App() {
               <Route path="announcements" element={<Suspense fallback={<Fallback />}><StudentAnnouncements /></Suspense>} />
               <Route path="food"          element={<Suspense fallback={<Fallback />}><StudentFoodMenu /></Suspense>} />
               <Route path="profile"       element={<Suspense fallback={<Fallback />}><StudentProfile /></Suspense>} />
-              <Route path="rewards"       element={<Suspense fallback={<Fallback />}><StudentRewards /></Suspense>} />
               <Route path="*"             element={<Navigate to="dashboard" replace />} />
             </Route>
           </Route>
