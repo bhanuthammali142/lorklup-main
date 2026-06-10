@@ -171,6 +171,9 @@ export const apiStudents = {
 
   bulkCreate: (students: unknown[], hostelId?: string) =>
     request('/api/students/bulk', { method: 'POST', body: JSON.stringify({ students, hostel_id: hostelId }) }),
+
+  getSelfProfile: () =>
+    request<unknown>('/api/students/profile/me'),
 }
 
 // ── Rooms ─────────────────────────────────────────────────────────────────────

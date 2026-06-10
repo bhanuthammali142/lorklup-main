@@ -488,4 +488,48 @@ async function bulkAddStudents(req, res) {
   }
 }
 
-module.exports = { getStudents, addStudent, updateStudent, deleteStudent, bulkAddStudents }
+// GET /api/students/profile/me
+async function getStudentSelfProfile(req, res) {
+  if (req.user.role !== 'student') {
+    return res.status(403).json({ error: 'Only students can access this endpoint' })
+  }
+  try {
+    const { rows } = await pool.query(
+      `SELECT s.*,
+              r.room_number, r.floor, r.type AS room_type, r.monthly_fee,
+              b.bed_number,
+              h.hostel_name
+       FROM students s
+       LEFT JOIN rooms r ON r.id = s.room_id
+       LEFT JOIN beds  b ON b.id = s.bed_id
+       LEFT JOIN hostels h ON h.id = s.hostel_id
+       WHERE s.user_id = $1 AND s.is_active = TRUE
+       LIMIT 1`,
+      [req.user.id]
+    )
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Student profile not found' })
+    }
+
+    const row = rows[0]
+    const mappedStudent = {
+      ...row,
+      rooms: row.room_id ? {
+        room_number: row.room_number,
+        floor: row.floor,
+        type: row.room_type
+      } : null,
+      beds: row.bed_id ? {
+        bed_number: row.bed_number
+      } : null
+    }
+
+    res.json(mappedStudent)
+  } catch (err) {
+    console.error('[getStudentSelfProfile]', err)
+    res.status(500).json({ error: 'Server error' })
+  }
+}
+
+module.exports = { getStudents, addStudent, updateStudent, deleteStudent, bulkAddStudents, getStudentSelfProfile }

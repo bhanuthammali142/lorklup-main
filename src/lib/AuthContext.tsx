@@ -61,14 +61,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   /** Load the student profile for a student user */
   const loadStudentData = useCallback(async (apiUser: ApiUser) => {
-    if (apiUser.role !== 'student' || !apiUser.hostel_id) return
+    if (apiUser.role !== 'student') return
     try {
-      const students = await apiStudents.getAll(apiUser.hostel_id) as StudentData[]
-      const record = students.find(
-        (s) =>
-          // eslint-disable-next-line eqeqeq
-          s.user_id == String(apiUser.id) || s.email === apiUser.email
-      )
+      const record = await apiStudents.getSelfProfile() as StudentData
       if (record) setStudentData(record)
     } catch (err) {
       console.error('[AuthContext] loadStudentData failed:', err)
@@ -88,24 +83,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const parsedUser: ApiUser = JSON.parse(userStr)
       setUserState(parsedUser)
-      setLoading(false)
 
-      // Refresh token/user from API in background
-      apiAuth.me()
-        .then(async (fresh) => {
-          setUserState(fresh)
-          setStoredUser(fresh)
-          if (fresh.role === 'student') {
-            await loadStudentData(fresh)
-          }
-        })
-        .catch(() => {
-          // Token expired — sign out silently
-          localStorage.removeItem('hostelOS_token')
-          localStorage.removeItem('hostelOS_user')
-          setUserState(null)
-          setStudentData(null)
-        })
+      const initialize = async () => {
+        if (parsedUser.role === 'student') {
+          await loadStudentData(parsedUser)
+        }
+      }
+
+      initialize().finally(() => {
+        setLoading(false)
+
+        // Refresh token/user from API in background
+        apiAuth.me()
+          .then(async (fresh) => {
+            setUserState(fresh)
+            setStoredUser(fresh)
+            if (fresh.role === 'student') {
+              await loadStudentData(fresh)
+            }
+          })
+          .catch(() => {
+            // Token expired — sign out silently
+            localStorage.removeItem('hostelOS_token')
+            localStorage.removeItem('hostelOS_user')
+            setUserState(null)
+            setStudentData(null)
+          })
+      })
     } catch {
       // Corrupted stored data
       localStorage.removeItem('hostelOS_token')

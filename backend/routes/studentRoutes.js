@@ -1,6 +1,6 @@
 const express = require('express')
 const router  = express.Router()
-const { getStudents, addStudent, updateStudent, deleteStudent, bulkAddStudents } = require('../controllers/studentController')
+const { getStudents, addStudent, updateStudent, deleteStudent, bulkAddStudents, getStudentSelfProfile } = require('../controllers/studentController')
 const { verifyToken, checkRole } = require('../middleware/auth')
 
 const tenantGuard = require('../middleware/tenantGuard');
@@ -9,6 +9,7 @@ router.use(verifyToken);
 router.use(tenantGuard);
 router.use(subscriptionGuard);
 
+router.get('/profile/me', getStudentSelfProfile)
 router.get('/',     getStudents)
 router.post('/',    checkRole('admin','super_admin'), addStudent)
 router.put('/:id',  checkRole('admin','super_admin'), updateStudent)

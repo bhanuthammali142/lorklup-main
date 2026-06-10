@@ -58,14 +58,6 @@ const apiLimiter = rateLimit({
   message: { error: 'Too many requests, please try again later.' }
 })
 
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'development' ? 1000 : 5, // higher limit in dev to prevent lockout
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many login attempts, please try again later.' }
-})
-
 // CORS — configured for security
 const allowedOrigins = [
   'http://localhost:3000',
@@ -117,9 +109,9 @@ app.get('/api/health', (req, res) => {
 })
 
 // ── API ROUTES ─────────────────────────────────────────────────────────────────
-// Apply stricter rate limiting to auth routes
-app.use('/api/auth',    authLimiter, authRoutes)
-app.use('/auth',        authLimiter, authRoutes)  // backward compatibility
+// Apply auth routes directly (rate-limiting is handled inside authRoutes.js per endpoint)
+app.use('/api/auth',    authRoutes)
+app.use('/auth',        authRoutes)  // backward compatibility
 
 // Apply general API rate limiting to all other routes
 app.use('/api/hostels',     apiLimiter, hostelRoutes)
