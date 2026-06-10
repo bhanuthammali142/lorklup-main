@@ -41,15 +41,22 @@ async function addStudent(req, res) {
     await conn.query('BEGIN')
 
     // ── CAPACITY CHECK ──
+    // In the refactored schema, billing_plans is dropped. We query subscriptions for status and plan_name,
+    // and retrieve the max student limit from platform_settings (defaulting to 200).
     const { rows: [subscription] } = await conn.query(`
-      SELECT bp.max_students 
-      FROM subscriptions s
-      JOIN billing_plans bp ON s.plan_id = bp.id
-      WHERE s.hostel_id = $1 AND s.status IN ('active', 'trialing')
-      ORDER BY s.created_at DESC LIMIT 1
+      SELECT plan_name, status 
+      FROM subscriptions 
+      WHERE hostel_id = $1 AND status IN ('active', 'trialing')
+      ORDER BY created_at DESC LIMIT 1
     `, [hostel_id])
     
-    const max_students = subscription ? subscription.max_students : 200;
+    let max_students = 200; // default fallback
+    const { rows: settingsRows } = await conn.query(
+      "SELECT value FROM platform_settings WHERE key = 'max_students'"
+    ).catch(() => ({ rows: [] }));
+    if (settingsRows.length > 0) {
+      max_students = parseInt(settingsRows[0].value, 10) || 200;
+    }
 
     const { rows: [{ student_count }] } = await conn.query(`
       SELECT COUNT(*) as student_count FROM students WHERE hostel_id = $1 AND is_active = TRUE
