@@ -43,6 +43,8 @@ export function AddStudentModal({ isOpen, hostelId, onClose, onSuccess }: AddStu
     joining_date: new Date().toISOString().split('T')[0],
     room_id: '',
     bed_id: '',
+    advance_amount: '0',
+    monthly_payment_day: '5',
   })
 
   useEffect(() => {
@@ -86,6 +88,8 @@ export function AddStudentModal({ isOpen, hostelId, onClose, onSuccess }: AddStu
         joining_date: form.joining_date,
         room_id: form.room_id || null,
         bed_id: form.bed_id || null,
+        advance_amount: Number(form.advance_amount || 0),
+        monthly_payment_day: Number(form.monthly_payment_day || 5),
         is_verified: false,
       })
 
@@ -112,6 +116,8 @@ export function AddStudentModal({ isOpen, hostelId, onClose, onSuccess }: AddStu
       id_number: '', college_name: '', branch: '',
       joining_date: new Date().toISOString().split('T')[0],
       room_id: '', bed_id: '',
+      advance_amount: '0',
+      monthly_payment_day: '5',
     })
   }
 
@@ -334,6 +340,33 @@ export function AddStudentModal({ isOpen, hostelId, onClose, onSuccess }: AddStu
                     <option value="">— No bed —</option>
                     {availableBeds.map(b => (
                       <option key={b.id} value={b.id}>{b.bed_number} (Available)</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-slate-700">Advance Taken (Deposit) (₹)</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 5000"
+                    value={form.advance_amount}
+                    onChange={e => set('advance_amount', e.target.value)}
+                    className="w-full mt-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-slate-700">Monthly Payment Date</label>
+                  <select
+                    value={form.monthly_payment_day}
+                    onChange={e => set('monthly_payment_day', e.target.value)}
+                    className="w-full mt-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                  >
+                    {Array.from({ length: 28 }, (_, i) => i + 1).map(day => (
+                      <option key={day} value={day}>
+                        {day}{day === 1 ? 'st' : day === 2 ? 'nd' : day === 3 ? 'rd' : 'th'} of every month
+                      </option>
                     ))}
                   </select>
                 </div>

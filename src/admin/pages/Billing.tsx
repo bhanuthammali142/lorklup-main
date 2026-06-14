@@ -144,7 +144,7 @@ export function Billing() {
 
   // Helper to trigger invoice download
   const getInvoiceDownloadUrl = (invoiceId: string) => {
-    const envApiUrl = import.meta.env.VITE_API_URL || 'https://hostelos-yis2.onrender.com/api';
+    const envApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
     const baseUrl = envApiUrl.replace(/\/api$/, '');
     return `${baseUrl}/api/billing/invoices/${invoiceId}/download?token=${getToken()}`;
   };

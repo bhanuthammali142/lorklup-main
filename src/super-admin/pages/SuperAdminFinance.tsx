@@ -4,9 +4,10 @@ import { useQuery } from '@tanstack/react-query'
 import {
   DollarSign, Search, Download, RefreshCw, Loader2,
   TrendingUp, TrendingDown, IndianRupee, CreditCard,
-  AlertCircle, CheckCircle2, Clock, Filter
+  AlertCircle, CheckCircle2, Clock, Filter, Building
 } from 'lucide-react'
 import { apiSuperAdmin } from '../../lib/api-client'
+import toast from 'react-hot-toast'
 
 const STATUS_STYLE: Record<string, string> = {
   paid:     'bg-emerald-50 text-emerald-700 border-emerald-200',
@@ -44,7 +45,7 @@ function fmt(n: number) {
 }
 
 export function SuperAdminFinance() {
-  const [tab, setTab] = useState<'payments' | 'fees'>('payments')
+  const [tab, setTab] = useState<'payments' | 'fees' | 'hostels'>('payments')
   const [search, setSearch] = useState('')
   const [hostelFilter, setHostelFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -52,7 +53,7 @@ export function SuperAdminFinance() {
   const [toDate, setToDate] = useState('')
 
   // Revenue summary
-  const { data: revData } = useQuery({
+  const { data: revData, refetch: refetchRev } = useQuery({
     queryKey: ['sa-revenue'],
     queryFn: async () => {
       const res = await apiSuperAdmin.getRevenueSummary()
@@ -108,6 +109,16 @@ export function SuperAdminFinance() {
   const byHostel = revData?.byHostel || []
   const byMonth  = revData?.byMonth  || []
 
+  const filteredHostels = byHostel.filter((h: any) => {
+    if (!search) return true
+    const s = search.toLowerCase()
+    return (
+      h.hostel_name?.toLowerCase().includes(s) ||
+      h.city?.toLowerCase().includes(s) ||
+      h.owner_name?.toLowerCase().includes(s)
+    )
+  })
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -117,7 +128,11 @@ export function SuperAdminFinance() {
           <p className="text-sm text-slate-500 mt-0.5">Revenue, payments and fee tracking across all hostels</p>
         </div>
         <button
-          onClick={() => tab === 'payments' ? refetchPay() : refetchFees()}
+          onClick={() => {
+            if (tab === 'payments') refetchPay()
+            else if (tab === 'fees') refetchFees()
+            else refetchRev()
+          }}
           className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
         >
           <RefreshCw className="h-4 w-4 text-slate-400" /> Refresh
@@ -195,7 +210,7 @@ export function SuperAdminFinance() {
 
       {/* Tabs */}
       <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
-        {(['payments', 'fees'] as const).map(t => (
+        {(['payments', 'fees', 'hostels'] as const).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -203,19 +218,19 @@ export function SuperAdminFinance() {
               tab === t ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-700'
             }`}
           >
-            {t === 'payments' ? '💳 Payments' : '📄 Fees'}
+            {t === 'payments' ? '💳 Payments' : t === 'fees' ? '📄 Fees' : '🏢 Hostel Payouts'}
           </button>
         ))}
       </div>
 
       {/* Filters */}
       <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-wrap gap-3">
-        {tab === 'payments' && (
+        {tab === 'hostels' && (
           <div className="relative flex-1 min-w-[180px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Search student / hostel…"
+              placeholder="Search hostel or owner…"
               className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50"
             />
           </div>
@@ -242,7 +257,10 @@ export function SuperAdminFinance() {
           </>
         )}
         <button
-          onClick={() => exportCSV(tab === 'payments' ? payments : fees, `${tab}-export.csv`)}
+          onClick={() => {
+            const dataToExport = tab === 'payments' ? payments : tab === 'fees' ? fees : filteredHostels
+            exportCSV(dataToExport, `${tab}-export.csv`)
+          }}
           className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold transition ml-auto"
         >
           <Download className="h-4 w-4" /> Export CSV
@@ -342,6 +360,128 @@ export function SuperAdminFinance() {
                       <td className="px-5 py-3.5"><StatusBadge status={f.status} /></td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Hostels Payouts Table */}
+      {tab === 'hostels' && (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in duration-300">
+          <div className="border-b border-slate-100 px-5 py-4 flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <h3 className="font-bold text-slate-800 text-base">Hostel Collections & Settlements</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Track online student fees collected via central gateway and due payouts to owners.</p>
+            </div>
+            <span className="bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs px-3 py-1 rounded-full font-bold">
+              {filteredHostels.length} Hostels
+            </span>
+          </div>
+
+          {filteredHostels.length === 0 ? (
+            <div className="p-12 text-center text-slate-400">
+              <Building className="h-10 w-10 mx-auto mb-3 opacity-20" />
+              <p className="font-medium">No hostels found</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50/50">
+                    <th className="text-left px-5 py-3.5 font-bold text-slate-500 text-xs uppercase tracking-wider">Hostel & Owner</th>
+                    <th className="text-left px-5 py-3.5 font-bold text-slate-500 text-xs uppercase tracking-wider">Cash Collected (Direct)</th>
+                    <th className="text-left px-5 py-3.5 font-bold text-slate-500 text-xs uppercase tracking-wider">Online Collected (Central)</th>
+                    <th className="text-left px-5 py-3.5 font-bold text-slate-500 text-xs uppercase tracking-wider">Net Payout to Send</th>
+                    <th className="text-left px-5 py-3.5 font-bold text-slate-500 text-xs uppercase tracking-wider">Settlement Bank Account</th>
+                    <th className="text-left px-5 py-3.5 font-bold text-slate-500 text-xs uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredHostels.map((h: any) => {
+                    const hasBank = h.bank_name && h.account_number && h.ifsc_code
+                    const payoutAmount = Number(h.online_collected || 0)
+
+                    return (
+                      <tr key={h.hostel_id || h.hostel_name} className="hover:bg-slate-50/60 transition-colors">
+                        <td className="px-5 py-4">
+                          <p className="font-bold text-slate-900 text-sm">{h.hostel_name}</p>
+                          <p className="text-xs text-slate-400">{h.city}</p>
+                          <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
+                            <span className="font-medium">{h.owner_name}</span>
+                            <span>·</span>
+                            <span>{h.owner_phone || 'No Phone'}</span>
+                          </div>
+                        </td>
+                        <td className="px-5 py-4 text-slate-600 font-medium">
+                          {fmt(h.cash_collected)}
+                          <p className="text-[10px] text-slate-400 mt-0.5">Kept directly by hostel</p>
+                        </td>
+                        <td className="px-5 py-4 text-indigo-600 font-bold">
+                          {fmt(h.online_collected)}
+                          <p className="text-[10px] text-indigo-400 mt-0.5">Collected via Central RZP</p>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="inline-flex flex-col">
+                            <span className="text-emerald-600 font-black text-sm">{fmt(payoutAmount)}</span>
+                            <span className="text-[10px] text-slate-400 mt-0.5">Awaiting Transfer</span>
+                          </span>
+                        </td>
+                        <td className="px-5 py-4">
+                          {hasBank ? (
+                            <div className="bg-slate-50 border border-slate-100 rounded-lg p-2.5 max-w-[220px]">
+                              <p className="text-xs font-bold text-slate-800 truncate">{h.bank_name}</p>
+                              <p className="text-[11px] text-slate-600 font-mono mt-0.5 select-all" title="Click to copy account number">
+                                A/C: {h.account_number}
+                              </p>
+                              <p className="text-[10px] text-slate-400 font-mono mt-0.5 select-all">
+                                IFSC: {h.ifsc_code}
+                              </p>
+                              <p className="text-[10px] text-slate-500 italic mt-0.5 truncate">
+                                Holder: {h.account_holder}
+                              </p>
+                            </div>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-xs text-slate-400 italic">
+                              <AlertCircle className="h-3.5 w-3.5 text-amber-500" /> No Bank Details Saved
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-5 py-4">
+                          {payoutAmount > 0 ? (
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  if (hasBank) {
+                                    navigator.clipboard.writeText(
+                                      `Bank: ${h.bank_name}\nHolder: ${h.account_holder}\nA/C: ${h.account_number}\nIFSC: ${h.ifsc_code}\nAmount: ₹${payoutAmount}`
+                                    )
+                                    toast.success('Bank coordinates & payout amount copied to clipboard!')
+                                  } else {
+                                    toast.error('Hostel Owner has not provided bank details yet.')
+                                  }
+                                }}
+                                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-lg transition"
+                              >
+                                Copy Bank Info
+                              </button>
+                              <button
+                                onClick={() => {
+                                  toast.success(`Simulated payout of ${fmt(payoutAmount)} to ${h.hostel_name} marked settled successfully!`)
+                                }}
+                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition shadow-sm"
+                              >
+                                Settle Payout
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-slate-400">Nothing to settle</span>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

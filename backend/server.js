@@ -63,6 +63,10 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
   'http://localhost:4173',
+  'https://52-66-209-176.sslip.io',
+  'http://52-66-209-176.sslip.io',
+  'https://13-203-66-99.sslip.io',
+  'http://13-203-66-99.sslip.io',
   process.env.FRONTEND_URL,
   process.env.VERCEL_URL,
 ].filter(Boolean)
@@ -153,11 +157,28 @@ app.use((err, req, res, next) => {
 })
 
 const PORT = process.env.PORT || 5000
-const server = app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', async () => {
   console.log(`✅ HostelOS API running on port ${PORT}`)
   console.log(`🔐 Auth: /api/auth/login`)
   console.log(`🏥 Health: /api/health`)
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`)
+
+  // Run database migration for hostel owner bank details columns
+  try {
+    const db = require('./config/db')
+    await db.query(`
+      ALTER TABLE hostel_owners ADD COLUMN IF NOT EXISTS bank_name VARCHAR(100);
+      ALTER TABLE hostel_owners ADD COLUMN IF NOT EXISTS account_holder VARCHAR(150);
+      ALTER TABLE hostel_owners ADD COLUMN IF NOT EXISTS account_number VARCHAR(50);
+      ALTER TABLE hostel_owners ADD COLUMN IF NOT EXISTS ifsc_code VARCHAR(20);
+      
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS advance_amount DECIMAL(10,2) DEFAULT 0;
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS monthly_payment_day INT DEFAULT 5;
+    `)
+    console.log('✅ Database migration: Bank details and student columns verified/added successfully')
+  } catch (err) {
+    console.error('⚠️ Database migration failed:', err.message)
+  }
 })
 
 // ── GRACEFUL SHUTDOWN ───────────────────────────────────────────────────────────

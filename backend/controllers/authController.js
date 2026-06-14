@@ -186,15 +186,23 @@ const me = async (req, res) => {
         let name = ''
         let phone = ''
         let hostelId = null
+        let bankName = ''
+        let accountHolder = ''
+        let accountNumber = ''
+        let ifscCode = ''
 
         if (user.role === 'super_admin') {
             const { rows: admin } = await db.query('SELECT name, phone FROM super_admins WHERE user_id = $1', [userId])
             name = admin[0]?.name || 'Super Admin'
             phone = admin[0]?.phone || ''
         } else if (user.role === 'admin') {
-            const { rows: owner } = await db.query('SELECT owner_name AS name, owner_phone AS phone FROM hostel_owners WHERE user_id = $1', [userId])
+            const { rows: owner } = await db.query('SELECT owner_name AS name, owner_phone AS phone, bank_name, account_holder, account_number, ifsc_code FROM hostel_owners WHERE user_id = $1', [userId])
             name = owner[0]?.name || 'Hostel Owner'
             phone = owner[0]?.phone || ''
+            bankName = owner[0]?.bank_name || ''
+            accountHolder = owner[0]?.account_holder || ''
+            accountNumber = owner[0]?.account_number || ''
+            ifscCode = owner[0]?.ifsc_code || ''
             const { rows: hostelRows } = await db.query(
                 'SELECT h.id AS hostel_id FROM hostels h JOIN hostel_owners ho ON ho.id = h.owner_id WHERE ho.user_id = $1 LIMIT 1',
                 [userId]
@@ -207,7 +215,7 @@ const me = async (req, res) => {
             hostelId = student[0]?.hostel_id ? String(student[0].hostel_id) : null
         }
 
-        res.json({ id: user.id, email: user.email, role: user.role, name, phone, hostel_id: hostelId })
+        res.json({ id: user.id, email: user.email, role: user.role, name, phone, hostel_id: hostelId, bank_name: bankName, account_holder: accountHolder, account_number: accountNumber, ifsc_code: ifscCode })
     } catch (error) {
         console.error('Me error:', error)
         res.status(500).json({ error: 'Server error' })
@@ -226,9 +234,16 @@ const updateProfile = async (req, res) => {
                 [name, phone || '', userId]
             )
         } else if (req.user.role === 'admin') {
+            const { bank_name, account_holder, account_number, ifsc_code } = req.body
             await db.query(
-                'UPDATE hostel_owners SET owner_name = $1, owner_phone = $2, owner_email = $3 WHERE user_id = $4',
-                [name, phone || '', email || '', userId]
+                `UPDATE hostel_owners 
+                 SET owner_name = $1, owner_phone = $2, owner_email = $3,
+                     bank_name = COALESCE($4, bank_name),
+                     account_holder = COALESCE($5, account_holder),
+                     account_number = COALESCE($6, account_number),
+                     ifsc_code = COALESCE($7, ifsc_code)
+                 WHERE user_id = $8`,
+                [name, phone || '', email || '', bank_name || null, account_holder || null, account_number || null, ifsc_code || null, userId]
             )
         } else if (req.user.role === 'student') {
             await db.query(

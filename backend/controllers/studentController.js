@@ -47,7 +47,7 @@ async function addStudent(req, res) {
   const {
     hostel_id, full_name, email, phone, parent_phone,
     id_number, college_name, branch, joining_date,
-    room_id, bed_id
+    room_id, bed_id, advance_amount, monthly_payment_day
   } = req.body
 
   if (!full_name || !hostel_id || !room_id || !bed_id) return res.status(400).json({ error: 'full_name, hostel_id, room_id, and bed_id required' })
@@ -159,12 +159,13 @@ async function addStudent(req, res) {
     await conn.query(
       `INSERT INTO students
        (id, hostel_id, user_id, room_id, bed_id, full_name, email, phone, parent_phone,
-        id_number, college_name, branch, joining_date)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id`,
+        id_number, college_name, branch, joining_date, advance_amount, monthly_payment_day)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING id`,
       [
         studentId, hostel_id, userId, room_id || null, bed_id || null,
         full_name, email || null, phone || null, parent_phone || null,
-        id_number || null, college_name || null, branch || null, joining_date || null
+        id_number || null, college_name || null, branch || null, joining_date || null,
+        Number(advance_amount || 0), Number(monthly_payment_day || 5)
       ]
     )
 
@@ -180,7 +181,8 @@ async function addStudent(req, res) {
       if (fee > 0) {
         const now = new Date()
         const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString().split('T')[0]
-        const dueDate   = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 5)).toISOString().split('T')[0]
+        const dueDay = Number(monthly_payment_day || 5)
+        const dueDate   = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, dueDay)).toISOString().split('T')[0]
         await conn.query(
           `INSERT INTO fees (id, hostel_id, student_id, amount, due_amount, month, due_date, status)
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
@@ -244,7 +246,8 @@ async function updateStudent(req, res) {
   const fields = req.body
   const allowed = [
     'full_name', 'email', 'phone', 'parent_phone', 'id_number',
-    'college_name', 'branch', 'joining_date', 'room_id', 'bed_id', 'is_verified', 'is_active'
+    'college_name', 'branch', 'joining_date', 'room_id', 'bed_id', 'is_verified', 'is_active',
+    'advance_amount', 'monthly_payment_day'
   ]
   const updates = Object.keys(fields).filter(k => allowed.includes(k))
   if (updates.length === 0) return res.status(400).json({ error: 'No valid fields to update' })

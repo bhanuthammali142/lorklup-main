@@ -5,7 +5,7 @@
 import React, { useState, useEffect } from 'react'
 import { ShieldCheck, Loader2, Eye, EyeOff, AlertCircle, KeyRound } from 'lucide-react'
 
-const envApiUrl = import.meta.env.VITE_API_URL || 'https://hostelos-yis2.onrender.com/api'
+const envApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api'
 const BASE_URL = envApiUrl.replace(/\/api$/, '')
 
 export function Login() {

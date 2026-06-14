@@ -206,7 +206,22 @@ async function getStudentFees(req, res) {
       'SELECT * FROM fees WHERE student_id = $1 ORDER BY month DESC',
       [studentId]
     )
-    res.json(rows)
+
+    // Filter out future bills that are not within 5 days of their due date
+    const now = new Date()
+    const filtered = rows.filter(fee => {
+      if (fee.status === 'paid') return true
+      if (!fee.due_date) return true
+
+      const dueDate = new Date(fee.due_date)
+      const fiveDaysBefore = new Date(dueDate)
+      fiveDaysBefore.setDate(dueDate.getDate() - 5)
+
+      // Show if today is on or after fiveDaysBefore
+      return now >= fiveDaysBefore
+    })
+
+    res.json(filtered)
   } catch (err) {
     console.error('[getStudentFees]', err)
     res.status(500).json({ error: 'Server error' })

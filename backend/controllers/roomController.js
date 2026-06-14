@@ -59,13 +59,68 @@ async function addRoom(req, res) {
 async function updateRoom(req, res) {
   const { id } = req.params
   const { room_number, floor, type, capacity, monthly_fee } = req.body
+  
+  const conn = await pool.connect()
   try {
-    await pool.query(
+    await conn.query('BEGIN')
+
+    // Get the current room to know its hostel_id
+    const { rows: roomRows } = await conn.query('SELECT hostel_id FROM rooms WHERE id = $1 FOR UPDATE', [id])
+    if (roomRows.length === 0) {
+      await conn.query('ROLLBACK')
+      conn.release()
+      return res.status(404).json({ error: 'Room not found' })
+    }
+    const hostelId = roomRows[0].hostel_id
+
+    // Update rooms table
+    await conn.query(
       'UPDATE rooms SET room_number=$1, floor=$2, type=$3, capacity=$4, monthly_fee=$5 WHERE id=$6',
       [room_number, floor, type, capacity, monthly_fee, id]
     )
+
+    // Sync beds
+    if (capacity !== undefined) {
+      const targetCapacity = Number(capacity) || 3
+      const { rows: currentBeds } = await conn.query('SELECT * FROM beds WHERE room_id = $1 ORDER BY bed_number', [id])
+      const currentCount = currentBeds.length
+
+      if (targetCapacity > currentCount) {
+        // Create additional beds
+        for (let i = currentCount; i < targetCapacity; i++) {
+          await conn.query(
+            'INSERT INTO beds (id, hostel_id, room_id, bed_number, status) VALUES ($1,$2,$3,$4,$5)',
+            [crypto.randomUUID(), hostelId, id, `B${i + 1}`, 'available']
+          )
+        }
+      } else if (targetCapacity < currentCount) {
+        // Shrink beds - find excess beds
+        const excessCount = currentCount - targetCapacity
+        const bedsToRemove = currentBeds.slice(-excessCount)
+        
+        // Check if any of the excess beds are occupied
+        const occupiedExcess = bedsToRemove.filter(b => b.status === 'occupied')
+        if (occupiedExcess.length > 0) {
+          await conn.query('ROLLBACK')
+          conn.release()
+          return res.status(400).json({ 
+            error: `Cannot reduce room capacity. Bed(s) ${occupiedExcess.map(b => b.bed_number).join(', ')} are currently occupied. Please unassign them first.` 
+          })
+        }
+
+        // Delete excess beds
+        for (const b of bedsToRemove) {
+          await conn.query('DELETE FROM beds WHERE id = $1', [b.id])
+        }
+      }
+    }
+
+    await conn.query('COMMIT')
+    conn.release()
     res.json({ success: true })
   } catch (err) {
+    await conn.query('ROLLBACK')
+    if (conn) conn.release()
     console.error('[updateRoom]', err)
     res.status(500).json({ error: 'Server error' })
   }

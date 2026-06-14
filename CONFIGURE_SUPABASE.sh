@@ -19,7 +19,7 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 # Supabase Project Reference
-PROJECT_REF="svyiwleriolpoxogqqo"
+PROJECT_REF="oegqratzpvyxezfxiqnm"
 SUPABASE_URL="https://${PROJECT_REF}.supabase.co"
 
 # Your provided credentials (REPLACE WITH YOUR OWN KEYS)
@@ -66,7 +66,7 @@ JWT_SECRET=\$(openssl rand -base64 32)
 # SERVER CONFIGURATION
 # ============================================
 
-PORT=5000
+PORT=5001
 NODE_ENV=development
 FRONTEND_URL=http://localhost:5173
 
@@ -101,7 +101,7 @@ VITE_SUPABASE_ANON_KEY=${ANON_KEY}
 # ============================================
 
 # Backend API endpoint
-VITE_API_URL=http://localhost:5000/api
+VITE_API_URL=http://localhost:5001/api
 
 # For production:
 # VITE_API_URL=https://your-backend.onrender.com/api

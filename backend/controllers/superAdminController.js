@@ -426,12 +426,17 @@ const getNotifications = async (req, res) => {
 const getRevenueSummary = async (req, res) => {
     try {
         const { rows: byHostel } = await db.query(`
-            SELECT h.hostel_name, h.city,
+            SELECT h.id AS hostel_id, h.hostel_name, h.city,
+                   ho.owner_name, ho.owner_phone, ho.owner_email,
+                   ho.bank_name, ho.account_holder, ho.account_number, ho.ifsc_code,
                    COALESCE(SUM(p.amount), 0) AS total_collected,
+                   COALESCE(SUM(CASE WHEN p.payment_method = 'cash' THEN p.amount ELSE 0 END), 0) AS cash_collected,
+                   COALESCE(SUM(CASE WHEN p.payment_method = 'razorpay' THEN p.amount ELSE 0 END), 0) AS online_collected,
                    COUNT(p.id) AS payment_count
             FROM hostels h
+            LEFT JOIN hostel_owners ho ON ho.id = h.owner_id
             LEFT JOIN student_payments p ON p.hostel_id = h.id
-            GROUP BY h.id
+            GROUP BY h.id, ho.id
             ORDER BY total_collected DESC
         `);
 

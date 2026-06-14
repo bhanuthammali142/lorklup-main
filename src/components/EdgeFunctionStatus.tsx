@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react'
 import { Server, CheckCircle2, XCircle } from 'lucide-react'
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'https://hostelos-yis2.onrender.com/api'
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api'
 
 export function EdgeFunctionStatus() {
   const [status, setStatus] = useState<'checking' | 'online' | 'offline'>('checking')

@@ -61,6 +61,10 @@ CREATE TABLE hostel_owners (
     owner_name VARCHAR(100) NOT NULL,
     owner_phone VARCHAR(20),
     owner_email VARCHAR(255),
+    bank_name VARCHAR(100),
+    account_holder VARCHAR(150),
+    account_number VARCHAR(50),
+    ifsc_code VARCHAR(20),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -143,6 +147,8 @@ CREATE TABLE students (
     parent_verified BOOLEAN DEFAULT FALSE,
     must_change_password BOOLEAN DEFAULT FALSE,
     is_active BOOLEAN DEFAULT TRUE,
+    advance_amount DECIMAL(10,2) DEFAULT 0,
+    monthly_payment_day INT DEFAULT 5,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

@@ -55,6 +55,14 @@ export function Settings() {
     email: '',
   })
 
+  // Bank details form state
+  const [bankForm, setBankForm] = useState({
+    bank_name: '',
+    account_holder: '',
+    account_number: '',
+    ifsc_code: '',
+  })
+
   // Password update form state
   const [passwordForm, setPasswordForm] = useState({
     newPassword: '',
@@ -78,6 +86,15 @@ export function Settings() {
       phone: user.phone ?? '',
       email: user.email ?? '',
     })
+
+    if (user.role === 'admin') {
+      setBankForm({
+        bank_name: (user as any).bank_name ?? '',
+        account_holder: (user as any).account_holder ?? '',
+        account_number: (user as any).account_number ?? '',
+        ifsc_code: (user as any).ifsc_code ?? '',
+      })
+    }
 
     // Fetch Hostel details
     getOrCreateHostel(String(user.id)).then(h => {
@@ -541,27 +558,71 @@ export function Settings() {
                   <p className="text-xs text-slate-400 mt-1">Tax settings, currency, and payment gateways</p>
                 </div>
 
-                <div className="bg-white border border-slate-200/60 rounded-2xl p-5 shadow-sm space-y-4">
-                  <h3 className="text-xs font-black text-indigo-600 uppercase tracking-wider">Payment Gateways</h3>
-                  
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Razorpay Key ID</label>
-                    <input
-                      type="text"
-                      placeholder="rzp_test_..."
-                      defaultValue="rzp_test_Sss30xXqXEYmM9"
-                      className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                    />
+                {/* Notice Banner */}
+                <div className="bg-white border border-slate-200/60 rounded-2xl p-5 shadow-sm space-y-3">
+                  <h3 className="text-xs font-black text-indigo-600 uppercase tracking-wider">Payment Gateway</h3>
+                  <div className="p-4 bg-indigo-50/50 rounded-xl border border-indigo-100 flex items-start gap-3">
+                    <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600 mt-0.5">
+                      <CreditCard className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-indigo-950">Centralized Payments Enabled</h4>
+                      <p className="text-[11px] text-indigo-600/90 leading-relaxed mt-0.5">
+                        Online student payments and platform subscriptions are centrally managed by the platform administrator via Razorpay. Student fees paid online will be collected and settled directly to your registered bank account below.
+                      </p>
+                    </div>
                   </div>
+                </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Razorpay Secret Key</label>
-                    <input
-                      type="password"
-                      placeholder="••••••••••••••••••••"
-                      defaultValue="xr3MzaLX7jh9VDHtOUsgtO5F"
-                      className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                    />
+                {/* Settlement Bank Details Card */}
+                <div className="bg-white border border-slate-200/60 rounded-2xl p-5 shadow-sm space-y-4">
+                  <h3 className="text-xs font-black text-slate-700 uppercase tracking-wider">Settlement Bank Account</h3>
+                  <p className="text-[11px] text-slate-400 -mt-2">Provide bank details where online collected student fees will be transferred.</p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Bank Name</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. State Bank of India"
+                        value={bankForm.bank_name}
+                        onChange={e => setBankForm({ ...bankForm, bank_name: e.target.value })}
+                        className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Account Holder Name</label>
+                      <input
+                        type="text"
+                        placeholder="Name as in Bank Passbook"
+                        value={bankForm.account_holder}
+                        onChange={e => setBankForm({ ...bankForm, account_holder: e.target.value })}
+                        className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Account Number</label>
+                      <input
+                        type="text"
+                        placeholder="Bank Account Number"
+                        value={bankForm.account_number}
+                        onChange={e => setBankForm({ ...bankForm, account_number: e.target.value })}
+                        className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">IFSC Code</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. SBIN0001234"
+                        value={bankForm.ifsc_code}
+                        onChange={e => setBankForm({ ...bankForm, ifsc_code: e.target.value.toUpperCase() })}
+                        className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -589,13 +650,39 @@ export function Settings() {
                 </div>
 
                 <button
-                  onClick={() => {
-                    toast.success('Financial configurations updated!')
-                    setActiveSubPage(null)
+                  onClick={async () => {
+                    setSaving(true)
+                    try {
+                      await updateProfile(
+                        profileForm.name,
+                        profileForm.phone,
+                        profileForm.email,
+                        bankForm.bank_name,
+                        bankForm.account_holder,
+                        bankForm.account_number,
+                        bankForm.ifsc_code
+                      )
+                      if (user) {
+                        setUser({
+                          ...user,
+                          bank_name: bankForm.bank_name,
+                          account_holder: bankForm.account_holder,
+                          account_number: bankForm.account_number,
+                          ifsc_code: bankForm.ifsc_code,
+                        })
+                      }
+                      toast.success('Financial & Bank details saved!')
+                      setActiveSubPage(null)
+                    } catch (err: any) {
+                      toast.error(err.message || 'Failed to save bank details')
+                    } finally {
+                      setSaving(false)
+                    }
                   }}
-                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/15"
+                  disabled={saving}
+                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/15 disabled:opacity-50"
                 >
-                  <Save className="h-4 w-4" /> Save Financial Configs
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save Financial Configs
                 </button>
               </div>
             )}

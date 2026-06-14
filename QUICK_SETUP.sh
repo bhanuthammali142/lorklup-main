@@ -52,7 +52,7 @@ RAZORPAY_KEY_ID=
 RAZORPAY_KEY_SECRET=
 
 # Server
-PORT=5000
+PORT=5001
 NODE_ENV=development
 FRONTEND_URL=http://localhost:5173
 EOF
@@ -74,7 +74,7 @@ VITE_SUPABASE_URL=https://your-ref.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 
 # API
-VITE_API_URL=http://localhost:5000/api
+VITE_API_URL=http://localhost:5001/api
 
 # Razorpay (optional)
 VITE_RAZORPAY_KEY_ID=

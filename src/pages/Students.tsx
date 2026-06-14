@@ -130,6 +130,8 @@ export function Students() {
                   { icon: Building2, label: 'College', value: selectedStudent.college_name ?? 'N/A' },
                   { icon: Building2, label: 'Branch & ID', value: `${selectedStudent.branch ?? ''} ${selectedStudent.id_number ? `(${selectedStudent.id_number})` : ''}`.trim() || 'N/A' },
                   { icon: Calendar, label: 'Joining Date', value: new Date(selectedStudent.joining_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) },
+                  { icon: CreditCard, label: 'Advance Taken (Deposit)', value: `₹${Number((selectedStudent as any).advance_amount || 0).toLocaleString('en-IN')}` },
+                  { icon: Calendar, label: 'Monthly Payment Date', value: (selectedStudent as any).monthly_payment_day ? `${(selectedStudent as any).monthly_payment_day} of every month` : '5th of every month' },
                 ].map(({ icon: Icon, label, value }) => (
                   <div key={label} className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
                     <Icon className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />

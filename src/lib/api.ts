@@ -43,9 +43,9 @@ export async function bulkCreateHostels(hostels: any[]) {
   return apiHostels.bulkCreate(hostels)
 }
 
-export async function updateProfile(name: string, phone: string, email: string) {
+export async function updateProfile(name: string, phone: string, email: string, bank_name?: string, account_holder?: string, account_number?: string, ifsc_code?: string) {
   const { apiAuth } = await import('./api-client')
-  return apiAuth.updateProfile(name, phone, email)
+  return apiAuth.updateProfile(name, phone, email, bank_name, account_holder, account_number, ifsc_code)
 }
 
 // ─── STUDENTS ────────────────────────────────────────────────────────────────

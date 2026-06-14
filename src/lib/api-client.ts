@@ -1,7 +1,7 @@
 // HostelOS API Client
 // Backend: https://hostelos-yis2.onrender.com
 
-const envApiUrl = import.meta.env.VITE_API_URL || 'https://hostelos-yis2.onrender.com/api'
+const envApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api'
 const BASE_URL = envApiUrl.replace(/\/api$/, '')
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -12,6 +12,10 @@ export interface ApiUser {
   phone?: string
   role: 'super_admin' | 'admin' | 'student'
   hostel_id: string | null
+  bank_name?: string
+  account_holder?: string
+  account_number?: string
+  ifsc_code?: string
 }
 
 // ── Token Helpers ────────────────────────────────────────────────────────────
@@ -121,10 +125,10 @@ export const apiAuth = {
       body: JSON.stringify({ newPassword }),
     }),
 
-  updateProfile: (name: string, phone: string, email: string) =>
+  updateProfile: (name: string, phone: string, email: string, bank_name?: string, account_holder?: string, account_number?: string, ifsc_code?: string) =>
     request('/auth/profile', {
       method: 'PUT',
-      body: JSON.stringify({ name, phone, email }),
+      body: JSON.stringify({ name, phone, email, bank_name, account_holder, account_number, ifsc_code }),
     }),
 }
 
