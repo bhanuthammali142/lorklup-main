@@ -15,6 +15,7 @@ export async function createHostelWithOwner(payload: {
   contactPhone?: string
   floors?: any[]
   menu?: any
+  profilePhoto?: string
 }) {
   const finalPassword = payload.ownerPassword || generateTempPassword()
   return apiHostels.createWithOwner({
@@ -31,7 +32,8 @@ export async function createHostelWithOwner(payload: {
     contact_email:  payload.contactEmail || payload.ownerEmail,
     contact_phone:  payload.contactPhone || payload.ownerPhone || '',
     floors:         payload.floors || [],
-    menu:           payload.menu || {}
+    menu:           payload.menu || {},
+    profile_photo:  payload.profilePhoto || ''
   }).then((res: any) => {
     // Map response to what UI expects
     return {

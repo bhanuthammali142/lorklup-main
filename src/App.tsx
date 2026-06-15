@@ -5,6 +5,9 @@ import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from './lib/AuthContext'
 import { AdminRoute, StudentRoute, SuperAdminRoute } from './lib/RouteGuards'
 import { ErrorBoundary, PageSkeleton } from './components/ErrorBoundary'
+import { SplashScreen } from './components/SplashScreen'
+import { OfflineIndicator } from './components/OfflineIndicator'
+import { usePushNotifications } from './lib/usePushNotifications'
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 import { Login } from './pages/Login'
@@ -51,18 +54,27 @@ const SuperAdminDeployGuide   = lazy(() => import('./super-admin/pages/DeployGui
 
 const Fallback = () => <PageSkeleton />
 
+function PushNotificationInitializer() {
+  usePushNotifications()
+  return null
+}
+
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <SplashScreen />
+        <OfflineIndicator />
+        <PushNotificationInitializer />
         <Toaster
-          position="top-right"
+          position={window.innerWidth < 768 ? 'bottom-center' : 'top-right'}
           toastOptions={{
             style: {
               borderRadius: '12px',
               background: '#1e293b',
               color: '#f8fafc',
               fontSize: '13px',
+              marginBottom: window.innerWidth < 768 ? '56px' : '0px',
             },
           }}
         />

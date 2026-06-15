@@ -40,3 +40,7 @@ query.js
 # Supabase local dev
 supabase/.branches
 supabase/.temp
+
+# Firebase
+.firebase/
+

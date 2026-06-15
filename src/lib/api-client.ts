@@ -18,21 +18,57 @@ export interface ApiUser {
   ifsc_code?: string
 }
 
+import { secureStorage } from './secure-storage'
+
+let cachedToken: string | null = null
+let cachedUser: ApiUser | null = null
+let isAuthInitialized = false
+
+export async function initStoredAuth() {
+  if (isAuthInitialized) return
+  cachedToken = await secureStorage.getSecure('hostelOS_token')
+  const userStr = await secureStorage.getSecure('hostelOS_user')
+  if (userStr) {
+    try {
+      const parsed = JSON.parse(userStr)
+      cachedUser = parsed.user || parsed
+    } catch {
+      cachedUser = null
+    }
+  }
+  isAuthInitialized = true
+}
+
 // ── Token Helpers ────────────────────────────────────────────────────────────
 export function getToken(): string | null {
-  return localStorage.getItem('hostelOS_token')
+  return cachedToken || localStorage.getItem('hostelOS_token')
+}
+
+export function getDocumentUrl(relativePath: string | null | undefined): string {
+  if (!relativePath) return ''
+  if (relativePath.startsWith('http://') || relativePath.startsWith('https://') || relativePath.startsWith('data:')) {
+    return relativePath
+  }
+  const token = getToken()
+  const separator = relativePath.includes('?') ? '&' : '?'
+  const cleanPath = relativePath.startsWith('/') ? relativePath : `/${relativePath}`
+  return `${BASE_URL}${cleanPath}${token ? `${separator}token=${token}` : ''}`
 }
 
 export function setToken(token: string) {
-  localStorage.setItem('hostelOS_token', token)
+  cachedToken = token
+  secureStorage.setSecure('hostelOS_token', token)
 }
 
 export function clearToken() {
-  localStorage.removeItem('hostelOS_token')
-  localStorage.removeItem('hostelOS_user')
+  cachedToken = null
+  cachedUser = null
+  secureStorage.removeSecure('hostelOS_token')
+  secureStorage.removeSecure('hostelOS_user')
 }
 
 export function getStoredUser(): ApiUser | null {
+  if (cachedUser) return cachedUser
   const raw = localStorage.getItem('hostelOS_user')
   if (!raw) return null
   try {
@@ -44,7 +80,8 @@ export function getStoredUser(): ApiUser | null {
 }
 
 export function setStoredUser(user: ApiUser) {
-  localStorage.setItem('hostelOS_user', JSON.stringify(user))
+  cachedUser = user
+  secureStorage.setSecure('hostelOS_user', JSON.stringify(user))
 }
 
 // ── Core Request Function ─────────────────────────────────────────────────────

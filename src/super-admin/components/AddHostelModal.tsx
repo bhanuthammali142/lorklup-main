@@ -16,6 +16,7 @@ import {
   Eye, EyeOff, CheckCircle2, Loader2, ChevronRight, ChevronLeft, Copy, Check, AlertTriangle, SkipForward
 } from 'lucide-react'
 import { createHostelWithOwner } from '../../lib/adminApi'
+import { CameraCapture } from '../../components/CameraCapture'
 import toast from 'react-hot-toast'
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
@@ -82,6 +83,7 @@ export function AddHostelModal({
   const [ownerEmail, setOwnerEmail] = useState('')
   const [ownerPhone, setOwnerPhone] = useState('')
   const [ownerPassword, setOwnerPassword] = useState('')
+  const [ownerProfilePhoto, setOwnerProfilePhoto] = useState('')
 
   const [floors, setFloors] = useState<
     { floorName: string; rooms: { roomNumber: string; type: 'AC' | 'Non-AC'; beds: number; monthlyFee: number }[] }[]
@@ -146,6 +148,7 @@ export function AddHostelModal({
         floors,
         // If super admin and menu is empty, send empty object
         menu: isSuperAdmin ? {} : menu,
+        profilePhoto: ownerProfilePhoto,
       }
       
       const result = await createHostelWithOwner(payload)
@@ -275,7 +278,7 @@ export function AddHostelModal({
 
   const canNext = () => {
     if (step === 1) return hostelName.trim() && address.trim()
-    if (step === 2) return ownerName.trim() && ownerEmail.trim() && ownerPhone.trim()
+    if (step === 2) return ownerName.trim() && ownerEmail.trim() && ownerPhone.trim() && ownerProfilePhoto
     if (step === 3) return floors.length > 0 && floors.every(f => f.rooms.length > 0)
     // Step 4 (food menu) - always can proceed for super admin, or if menu filled for regular admin
     if (step === 4) {
@@ -344,6 +347,14 @@ export function AddHostelModal({
             <Field label="Email address *" value={ownerEmail} onChange={setOwnerEmail} placeholder="owner@email.com" type="email" />
             <Field label="Phone number *" value={ownerPhone} onChange={setOwnerPhone} placeholder="9XXXXXXXXX" />
             <Field label="Login Password" value={ownerPassword} onChange={setOwnerPassword} placeholder="Leave empty to auto-generate" type="text" />
+            
+            <div className="pt-2">
+              <CameraCapture
+                onPhotoSelected={(base64) => setOwnerProfilePhoto(base64)}
+                label="Profile Photo * (Mandatory)"
+                shape="circle"
+              />
+            </div>
           </div>
         )}
 

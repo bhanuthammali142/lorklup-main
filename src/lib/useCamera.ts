@@ -1,6 +1,6 @@
 // src/lib/useCamera.ts
 import { useState } from 'react'
-import { isNative, capturePhoto } from './capacitor'
+import { isNative, capturePhoto, pickPhotoFromGallery } from './capacitor'
 import toast from 'react-hot-toast'
 
 interface CameraOptions {
@@ -56,19 +56,19 @@ export function useCamera(options: CameraOptions = {}) {
     })
   }
 
-  const selectPhoto = async (e?: React.ChangeEvent<HTMLInputElement>) => {
+  const selectPhoto = async (source: 'camera' | 'gallery' | 'file' = 'camera', e?: React.ChangeEvent<HTMLInputElement>) => {
     setLoading(true)
     
     // 1. Native Capacitor Capture Flow
-    if (isNative()) {
+    if (isNative() && source !== 'file') {
       try {
-        const webPath = await capturePhoto()
+        const webPath = source === 'gallery' ? await pickPhotoFromGallery() : await capturePhoto()
         if (webPath) {
           setPhoto(webPath)
-          toast.success('Image captured successfully!')
+          toast.success('Image selected successfully!')
         }
       } catch (err) {
-        console.warn('Native camera capture failed/cancelled, trying file picker')
+        console.warn('Native camera/gallery operation failed/cancelled')
       } finally {
         setLoading(false)
       }

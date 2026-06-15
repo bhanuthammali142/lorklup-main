@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react'
 import { apiNotifications } from './api-client'
 
+import { isNative } from './capacitor'
+
 export interface Notification {
   id: string
   title: string
@@ -82,10 +84,11 @@ export function useNotifications() {
     setUnreadCount(0)
   }
 
-  // Poll notifications every 30s
+  // Poll notifications every 30s (or 5min if native push is active)
   useEffect(() => {
     fetchNotifications()
-    const timer = setInterval(fetchNotifications, 30000)
+    const interval = isNative() ? 300000 : 30000
+    const timer = setInterval(fetchNotifications, interval)
     return () => clearInterval(timer)
   }, [])
 

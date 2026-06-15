@@ -39,6 +39,13 @@ export function SuperAdminLayout() {
     setMobileMenuOpen(false)
   }, [location.pathname])
 
+  const BOTTOM_NAV = [
+    { name: 'Overview', href: '/superadmin/dashboard', icon: LayoutDashboard },
+    { name: 'Hostels',  href: '/superadmin/hostels',   icon: Building2 },
+    { name: 'Users',    href: '/superadmin/users',     icon: Users },
+    { name: 'Finance',  href: '/superadmin/finance',   icon: IndianRupee },
+  ]
+
   const SidebarContent = ({ isMobile, onClose }: { isMobile?: boolean, onClose?: () => void }) => (
     <div className="flex flex-col h-full bg-slate-950 border-r border-slate-800 relative shadow-2xl">
       {/* Glow effect */}
@@ -105,7 +112,7 @@ export function SuperAdminLayout() {
   )
 
   return (
-    <div className="flex h-screen bg-[#fcfcfd] relative overflow-hidden text-[#111827]">
+    <div className="flex h-screen bg-[#fcfcfd] dark:bg-[#0b0f19] relative overflow-hidden text-[#111827] dark:text-slate-100">
       
       {/* Desktop Sidebar */}
       <div className="hidden md:block w-64 z-20 shrink-0">
@@ -127,32 +134,60 @@ export function SuperAdminLayout() {
 
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Top Navbar */}
-        <header className="flex h-14 md:h-16 items-center justify-between px-4 sm:px-6 md:px-8 border-b border-slate-200/60 bg-white/90 backdrop-blur-xl z-30 shrink-0">
+        <header className="flex h-14 md:h-16 items-center justify-between px-4 sm:px-6 md:px-8 border-b border-slate-200/60 dark:border-slate-800/80 bg-white/90 dark:bg-slate-950/80 backdrop-blur-xl z-30 shrink-0">
           <div className="flex items-center gap-3">
-            <button 
-              onClick={() => setMobileMenuOpen(true)}
-              className="md:hidden p-2 -ml-2 rounded-lg text-slate-500 hover:bg-slate-100"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-            <h1 className="text-lg font-bold text-slate-900 hidden sm:block">
+            <h1 className="text-lg font-bold text-slate-900 dark:text-white sm:block">
               {NAV.find(n => n.href === location.pathname)?.name || 'HQ Dashboard'}
             </h1>
           </div>
           <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-1.5 bg-indigo-50 border border-indigo-200 rounded-full px-2.5 py-1">
-              <ShieldCheck className="h-3 w-3 text-indigo-600" />
-              <span className="text-[10px] font-bold text-indigo-700">HQ Access</span>
+            <div className="flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900/50 rounded-full px-2.5 py-1">
+              <ShieldCheck className="h-3 w-3 text-indigo-600 dark:text-indigo-400" />
+              <span className="text-[10px] font-bold text-indigo-700 dark:text-indigo-400">HQ Access</span>
             </div>
           </div>
         </header>
 
         {/* Main Content Area */}
         <main className="flex-1 overflow-y-auto">
-          <div className="max-w-[1440px] px-4 sm:px-6 md:px-8 py-6 sm:py-8 mx-auto w-full">
+          <div className="max-w-[1440px] px-4 sm:px-6 md:px-8 py-6 sm:py-8 pb-20 md:pb-8 mx-auto w-full">
             <Outlet />
           </div>
         </main>
+
+        {/* Mobile Bottom Tab Bar */}
+        <nav 
+          className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-t border-slate-200/80 dark:border-slate-800/80 z-30 flex items-stretch"
+          style={{ paddingBottom: 'var(--safe-area-bottom)', minHeight: 'calc(56px + var(--safe-area-bottom))' }}
+          aria-label="Mobile primary navigation"
+        >
+          {BOTTOM_NAV.map(item => (
+            <NavLink
+              key={item.name}
+              to={item.href}
+              end={item.href === '/superadmin/dashboard'}
+              className={({ isActive }) => cn(
+                'flex-1 flex flex-col items-center justify-center gap-1 py-2 text-[10px] font-bold transition-all duration-150 active:scale-95',
+                isActive ? 'text-indigo-500' : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400'
+              )}
+            >
+              {({ isActive }) => (
+                <>
+                  <item.icon className={cn('h-5.5 w-5.5 transition-transform duration-200', isActive && 'scale-110 text-indigo-500')} />
+                  <span>{item.name}</span>
+                </>
+              )}
+            </NavLink>
+          ))}
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="flex-1 flex flex-col items-center justify-center gap-1 py-2 text-[10px] font-bold text-slate-500 dark:text-slate-400 active:scale-95"
+            aria-label="Open side navigation drawer"
+          >
+            <Menu className="h-5.5 w-5.5" />
+            <span>More</span>
+          </button>
+        </nav>
       </div>
     </div>
   )

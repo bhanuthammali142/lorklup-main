@@ -4,6 +4,7 @@
  */
 import React, { useState, useEffect } from 'react'
 import { ShieldCheck, Loader2, Eye, EyeOff, AlertCircle, KeyRound } from 'lucide-react'
+import { initStoredAuth, getToken, getStoredUser, setToken, setStoredUser } from '../lib/api-client'
 
 const envApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api'
 const BASE_URL = envApiUrl.replace(/\/api$/, '')
@@ -18,17 +19,15 @@ export function Login() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    const token = localStorage.getItem('hostelOS_token')
-    const user = localStorage.getItem('hostelOS_user')
-    if (token && user) {
-      try {
-        const parsed = JSON.parse(user)
-        redirectByRole(parsed.role)
-      } catch {
-        localStorage.removeItem('hostelOS_token')
-        localStorage.removeItem('hostelOS_user')
+    const checkAuth = async () => {
+      await initStoredAuth()
+      const token = getToken()
+      const user = getStoredUser()
+      if (token && user) {
+        redirectByRole(user.role)
       }
     }
+    checkAuth()
   }, [])
 
   const redirectByRole = (role: string) => {
@@ -59,8 +58,8 @@ export function Login() {
         throw new Error('Invalid response from server')
       }
 
-      localStorage.setItem('hostelOS_token', data.token)
-      localStorage.setItem('hostelOS_user', JSON.stringify(data.user))
+      setToken(data.token)
+      setStoredUser(data.user)
       redirectByRole(data.user.role)
 
     } catch (err: any) {

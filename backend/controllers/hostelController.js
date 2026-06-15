@@ -1,5 +1,6 @@
 const db     = require('../config/db')
 const bcrypt = require('bcryptjs')
+const { saveBase64Image } = require('../utils/fileStorage')
 
 const getHostels = async (req, res) => {
     try {
@@ -112,13 +113,13 @@ const createHostelWithOwner = async (req, res) => {
         hostel_name, hostel_code, address_line1,
         city, state, pincode,
         contact_email, contact_phone,
-        floors, menu
+        floors, menu, profile_photo
     } = req.body
 
-    if (!owner_name || !owner_email || !owner_password || !hostel_name || !hostel_code || !address_line1) {
+    if (!owner_name || !owner_email || !owner_password || !hostel_name || !hostel_code || !address_line1 || !profile_photo) {
         return res.status(400).json({
             success: false,
-            error: 'Missing required fields: owner_name, owner_email, owner_password, hostel_name, hostel_code, address_line1'
+            error: 'Missing required fields: owner_name, owner_email, owner_password, hostel_name, hostel_code, address_line1, and profile_photo'
         })
     }
 
@@ -150,7 +151,16 @@ const createHostelWithOwner = async (req, res) => {
             'INSERT INTO hostel_owners (user_id, owner_name, owner_phone, owner_email) VALUES ($1, $2, $3, $4) RETURNING id',
             [userResult[0].id, owner_name, owner_phone || '', owner_email]
         )
-        console.log('✅ Owner created:', ownerResult[0].id)
+        const ownerId = ownerResult[0].id
+        console.log('✅ Owner created:', ownerId)
+
+        // Save profile photo
+        const photoUrl = saveBase64Image(profile_photo, 'owners', `${ownerId}_profile.jpg`)
+        await conn.query(
+            'UPDATE hostel_owners SET profile_photo_url = $1, profile_photo_uploaded_at = NOW() WHERE id = $2',
+            [photoUrl, ownerId]
+        )
+        console.log('✅ Owner profile photo saved:', photoUrl)
 
         // 3. Create hostel
         const totalRooms = floors ? floors.reduce((t, f) => t + (f.rooms?.length || 0), 0) : 0

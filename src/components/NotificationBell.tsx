@@ -1,8 +1,8 @@
-// @ts-nocheck
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Bell } from 'lucide-react'
 import { useNotifications } from '../lib/useNotifications'
 import { NotificationCenter } from './NotificationCenter'
+import { triggerHaptic } from '../lib/capacitor'
 
 export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false)
@@ -11,7 +11,10 @@ export function NotificationBell() {
   return (
     <>
       <button
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          triggerHaptic()
+          setIsOpen(true)
+        }}
         className="relative p-2 rounded-full text-slate-400 hover:text-slate-200 hover:bg-slate-900 transition-colors focus:outline-none touch-target flex items-center justify-center"
         aria-label="Notifications"
       >

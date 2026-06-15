@@ -10,6 +10,7 @@ import { X, CheckCircle2, ChevronRight, Check, Loader2, AlertTriangle } from 'lu
 import { cn } from '../lib/utils'
 import { addStudent, getRoomsWithBeds } from '../lib/api'
 import toast from 'react-hot-toast'
+import { CameraCapture } from './CameraCapture'
 
 interface AddStudentModalProps {
   isOpen: boolean
@@ -31,6 +32,11 @@ export function AddStudentModal({ isOpen, hostelId, onClose, onSuccess }: AddStu
   const [rooms, setRooms] = useState<RoomOption[]>([])
   const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null)
   const firstFocusRef = useRef<HTMLButtonElement>(null)
+
+  const [profilePhoto, setProfilePhoto] = useState('')
+  const [aadhaarFront, setAadhaarFront] = useState('')
+  const [aadhaarBack, setAadhaarBack] = useState('')
+  const [collegeId, setCollegeId] = useState('')
 
   const [form, setForm] = useState({
     full_name: '',
@@ -73,6 +79,10 @@ export function AddStudentModal({ isOpen, hostelId, onClose, onSuccess }: AddStu
     if (!form.phone) return toast.error('Phone number is required.')
     if (!form.email) return toast.error('Email address is required.')
     if (!form.room_id || !form.bed_id) return toast.error('Room and bed assignment is required.')
+    if (!profilePhoto) return toast.error('Student profile photo is required.')
+    if (!aadhaarFront) return toast.error('Aadhaar card front photo is required.')
+    if (!aadhaarBack) return toast.error('Aadhaar card back photo is required.')
+    if (!collegeId) return toast.error('College ID card photo is required.')
 
     setSaving(true)
     try {
@@ -91,6 +101,10 @@ export function AddStudentModal({ isOpen, hostelId, onClose, onSuccess }: AddStu
         advance_amount: Number(form.advance_amount || 0),
         monthly_payment_day: Number(form.monthly_payment_day || 5),
         is_verified: false,
+        profile_photo: profilePhoto,
+        aadhaar_front: aadhaarFront,
+        aadhaar_back: aadhaarBack,
+        college_id: collegeId,
       })
 
       if (response.credentials) {
@@ -111,6 +125,10 @@ export function AddStudentModal({ isOpen, hostelId, onClose, onSuccess }: AddStu
   const resetForm = () => {
     setStep(1)
     setCredentials(null)
+    setProfilePhoto('')
+    setAadhaarFront('')
+    setAadhaarBack('')
+    setCollegeId('')
     setForm({
       full_name: '', phone: '', parent_phone: '', email: '',
       id_number: '', college_name: '', branch: '',
@@ -268,35 +286,37 @@ export function AddStudentModal({ isOpen, hostelId, onClose, onSuccess }: AddStu
             </div>
           )}
 
-          {/* STEP 2 — Verification (simplified, no phone OTP backend) */}
+          {/* STEP 2 — Document Verification Uploads */}
           {step === 2 && (
             <div className="space-y-4 animate-in slide-in-from-right-4 duration-300">
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-semibold text-amber-900 text-sm">Phone Verification Skipped</p>
-                    <p className="text-xs text-amber-700 mt-1">
-                      SMS OTP verification requires a phone auth provider integration.
-                      The student will be marked as <strong>unverified</strong> until manually verified.
-                      You can verify them later from the Students page.
-                    </p>
+              <div className="bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900 rounded-xl p-3 text-xs text-indigo-700 dark:text-indigo-400 font-semibold">
+                📷 Take photos or upload existing documents. All 4 documents are mandatory to verify the student onboarding.
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[
+                  { key: 'profile', label: 'Profile Photo *', shape: 'circle' as const, state: profilePhoto, setter: setProfilePhoto },
+                  { key: 'aadhaar_front', label: 'Aadhaar Card Front *', shape: 'rectangle' as const, state: aadhaarFront, setter: setAadhaarFront },
+                  { key: 'aadhaar_back', label: 'Aadhaar Card Back *', shape: 'rectangle' as const, state: aadhaarBack, setter: setAadhaarBack },
+                  { key: 'college_id', label: 'College ID Card *', shape: 'rectangle' as const, state: collegeId, setter: setCollegeId },
+                ].map(doc => (
+                  <div key={doc.key} className="border border-slate-200 dark:border-slate-800 rounded-2xl p-3 bg-white dark:bg-slate-900 flex flex-col gap-2">
+                    <div className="flex justify-between items-center px-1">
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{doc.label}</span>
+                      {doc.state ? (
+                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-0.5 rounded-full border border-emerald-100 dark:border-emerald-900">✓ Uploaded</span>
+                      ) : (
+                        <span className="text-[10px] font-bold text-rose-500 bg-rose-50 dark:bg-rose-950/30 px-2.5 py-0.5 rounded-full border border-rose-100 dark:border-rose-900">Missing</span>
+                      )}
+                    </div>
+                    <CameraCapture
+                      onPhotoSelected={doc.setter}
+                      shape={doc.shape}
+                      label=""
+                      initialPreviewUrl={doc.state}
+                    />
                   </div>
-                </div>
-              </div>
-
-              <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-2">
-                <p className="text-sm font-semibold text-slate-700">Student Details Summary</p>
-                <div className="text-sm text-slate-600 space-y-1">
-                  <p><span className="font-medium">Name:</span> {form.full_name || '—'}</p>
-                  <p><span className="font-medium">Phone:</span> {form.phone || '—'}</p>
-                  <p><span className="font-medium">Email:</span> {form.email || 'Not provided'}</p>
-                  <p><span className="font-medium">College:</span> {form.college_name || '—'}</p>
-                </div>
-              </div>
-
-              <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-sm text-blue-700">
-                Click <strong>Continue</strong> to proceed to room allocation.
+                ))}
               </div>
             </div>
           )}
@@ -442,9 +462,21 @@ export function AddStudentModal({ isOpen, hostelId, onClose, onSuccess }: AddStu
           )}
           {step < 3 && (
             <button
-              onClick={() => setStep(step + 1)}
-              disabled={step === 1 && (!form.full_name || !form.phone || !form.email)}
-              className="btn-primary min-w-[120px] ml-auto disabled:opacity-40"
+              onClick={() => {
+                if (step === 1) {
+                  if (!form.full_name || !form.phone || !form.email) {
+                    return toast.error('Full name, student phone, and email address are required.')
+                  }
+                  setStep(2)
+                } else if (step === 2) {
+                  if (!profilePhoto) return toast.error('Student profile photo is required.')
+                  if (!aadhaarFront) return toast.error('Aadhaar Card Front photo is required.')
+                  if (!aadhaarBack) return toast.error('Aadhaar Card Back photo is required.')
+                  if (!collegeId) return toast.error('College ID Card photo is required.')
+                  setStep(3)
+                }
+              }}
+              className="btn-primary min-w-[120px] ml-auto"
             >
               Continue →
             </button>

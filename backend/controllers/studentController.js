@@ -1,6 +1,7 @@
 const pool   = require('../config/db')
 const bcrypt = require('bcryptjs')
 const crypto = require('crypto')
+const { saveBase64Image } = require('../utils/fileStorage')
 
 // GET /api/students?hostel_id=xxx
 async function getStudents(req, res) {
@@ -47,10 +48,15 @@ async function addStudent(req, res) {
   const {
     hostel_id, full_name, email, phone, parent_phone,
     id_number, college_name, branch, joining_date,
-    room_id, bed_id, advance_amount, monthly_payment_day
+    room_id, bed_id, advance_amount, monthly_payment_day,
+    profile_photo, aadhaar_front, aadhaar_back, college_id
   } = req.body
 
   if (!full_name || !hostel_id || !room_id || !bed_id) return res.status(400).json({ error: 'full_name, hostel_id, room_id, and bed_id required' })
+  if (!profile_photo) return res.status(400).json({ error: 'Profile Photo is required.' })
+  if (!aadhaar_front) return res.status(400).json({ error: 'Aadhaar Card Front photo is required.' })
+  if (!aadhaar_back) return res.status(400).json({ error: 'Aadhaar Card Back photo is required.' })
+  if (!college_id) return res.status(400).json({ error: 'College ID Card photo is required.' })
 
   const conn = await pool.connect()
   try {
@@ -156,16 +162,25 @@ async function addStudent(req, res) {
     }
 
     const studentId = crypto.randomUUID()
+    
+    // Save uploaded documents securely
+    const profilePhotoUrl = saveBase64Image(profile_photo, `students/${studentId}`, 'profile.jpg')
+    const aadhaarFrontUrl = saveBase64Image(aadhaar_front, `students/${studentId}`, 'aadhaar_front.jpg')
+    const aadhaarBackUrl  = saveBase64Image(aadhaar_back, `students/${studentId}`, 'aadhaar_back.jpg')
+    const collegeIdUrl    = saveBase64Image(college_id, `students/${studentId}`, 'college_id.jpg')
+
     await conn.query(
       `INSERT INTO students
        (id, hostel_id, user_id, room_id, bed_id, full_name, email, phone, parent_phone,
-        id_number, college_name, branch, joining_date, advance_amount, monthly_payment_day)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING id`,
+        id_number, college_name, branch, joining_date, advance_amount, monthly_payment_day,
+        profile_photo_url, aadhaar_front_url, aadhaar_back_url, college_id_url, document_status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20) RETURNING id`,
       [
         studentId, hostel_id, userId, room_id || null, bed_id || null,
         full_name, email || null, phone || null, parent_phone || null,
         id_number || null, college_name || null, branch || null, joining_date || null,
-        Number(advance_amount || 0), Number(monthly_payment_day || 5)
+        Number(advance_amount || 0), Number(monthly_payment_day || 5),
+        profilePhotoUrl, aadhaarFrontUrl, aadhaarBackUrl, collegeIdUrl, 'pending'
       ]
     )
 
@@ -247,7 +262,8 @@ async function updateStudent(req, res) {
   const allowed = [
     'full_name', 'email', 'phone', 'parent_phone', 'id_number',
     'college_name', 'branch', 'joining_date', 'room_id', 'bed_id', 'is_verified', 'is_active',
-    'advance_amount', 'monthly_payment_day'
+    'advance_amount', 'monthly_payment_day',
+    'profile_photo_url', 'aadhaar_front_url', 'aadhaar_back_url', 'college_id_url', 'document_status', 'verified_by', 'verified_at'
   ]
   const updates = Object.keys(fields).filter(k => allowed.includes(k))
   if (updates.length === 0) return res.status(400).json({ error: 'No valid fields to update' })

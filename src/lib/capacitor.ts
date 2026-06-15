@@ -107,3 +107,23 @@ export async function capturePhoto() {
   }
   throw new Error('Native camera not available on web platform')
 }
+
+// ── Native Gallery Pick Helper ──────────────────────────────────────────────
+export async function pickPhotoFromGallery() {
+  if (isNative()) {
+    try {
+      const { Camera, CameraResultType, CameraSource } = await import('@capacitor/camera')
+      const image = await Camera.getPhoto({
+        quality: 80,
+        allowEditing: false,
+        resultType: CameraResultType.Uri,
+        source: CameraSource.Photos
+      })
+      return image.webPath // path suitable for rendering in <img src="..." />
+    } catch (e) {
+      console.error('Native gallery pick failed', e)
+      throw e
+    }
+  }
+  throw new Error('Native gallery not available on web platform')
+}

@@ -63,6 +63,9 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
   'http://localhost:4173',
+  'capacitor://localhost',
+  'ionic://localhost',
+  'http://localhost',
   'https://52-66-209-176.sslip.io',
   'http://52-66-209-176.sslip.io',
   'https://13-203-66-99.sslip.io',
@@ -113,9 +116,102 @@ app.get('/api/health', (req, res) => {
 })
 
 // ── API ROUTES ─────────────────────────────────────────────────────────────────
-// Apply auth routes directly (rate-limiting is handled inside authRoutes.js per endpoint)
 app.use('/api/auth',    authRoutes)
 app.use('/auth',        authRoutes)  // backward compatibility
+
+// ── SECURE DOCUMENT SERVING ROUTES ─────────────────────────────────────────────
+const { verifyToken } = require('./middleware/auth')
+const path = require('path')
+const fs = require('fs')
+const db = require('./config/db')
+const { UPLOADS_DIR } = require('./utils/fileStorage')
+
+// Route to get hostel owner profile photo
+app.get('/api/documents/owners/:filename', verifyToken, async (req, res) => {
+  try {
+    const { filename } = req.params
+    
+    // Safety check to prevent path traversal
+    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+      return res.status(400).json({ error: 'Invalid filename' })
+    }
+
+    const ownerIdMatch = filename.match(/^(\d+)_/)
+    if (!ownerIdMatch) {
+      return res.status(400).json({ error: 'Invalid filename format' })
+    }
+    const ownerId = parseInt(ownerIdMatch[1], 10)
+
+    // Authorization:
+    // 1. Super admin can access all
+    // 2. The owner themselves can access their photo
+    if (req.user.role !== 'super_admin') {
+      // Check if logged in user is the owner
+      const { rows } = await db.query('SELECT id FROM hostel_owners WHERE user_id = $1', [req.user.id])
+      if (rows.length === 0 || rows[0].id !== ownerId) {
+        return res.status(403).json({ error: 'Access denied' })
+      }
+    }
+
+    const filePath = path.join(UPLOADS_DIR, 'owners', filename)
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found' })
+    }
+
+    res.sendFile(filePath)
+  } catch (err) {
+    console.error('[GetOwnerDocument]', err)
+    res.status(500).json({ error: 'Server error retrieving document' })
+  }
+})
+
+// Route to get student document
+app.get('/api/documents/students/:studentId/:filename', verifyToken, async (req, res) => {
+  try {
+    const { studentId, filename } = req.params
+
+    // Safety check to prevent path traversal
+    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+      return res.status(400).json({ error: 'Invalid file request' })
+    }
+
+    // Role-based Access Rules:
+    // - Super Admin: Access all
+    // - Hostel Owner (admin): Only their hostel students
+    // - Students: No access to uploaded documents, except their own profile photo
+    if (req.user.role === 'student') {
+      // Students can ONLY access their own profile photo (profile.jpg), not other documents (Aadhaar/ID card)
+      const { rows: selfRows } = await db.query('SELECT id FROM students WHERE user_id = $1', [req.user.id])
+      if (selfRows.length === 0 || selfRows[0].id !== studentId || filename !== 'profile.jpg') {
+        return res.status(403).json({ error: 'Access denied: Students cannot access uploaded documents' })
+      }
+    }
+
+    // Get student details to find their hostel
+    const { rows: studentRows } = await db.query('SELECT hostel_id FROM students WHERE id = $1', [studentId])
+    if (studentRows.length === 0) {
+      return res.status(404).json({ error: 'Student not found' })
+    }
+    const studentHostelId = studentRows[0].hostel_id
+
+    if (req.user.role !== 'super_admin' && req.user.role !== 'student') {
+      // User is 'admin' (Hostel Owner). Check if they manage this hostel.
+      if (req.user.hostel_id !== studentHostelId) {
+        return res.status(403).json({ error: 'Access denied: You do not have permission to view documents from this hostel' })
+      }
+    }
+
+    const filePath = path.join(UPLOADS_DIR, 'students', studentId, filename)
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found' })
+    }
+
+    res.sendFile(filePath)
+  } catch (err) {
+    console.error('[GetStudentDocument]', err)
+    res.status(500).json({ error: 'Server error retrieving document' })
+  }
+})
 
 // Apply general API rate limiting to all other routes
 app.use('/api/hostels',     apiLimiter, hostelRoutes)
@@ -163,7 +259,7 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
   console.log(`🏥 Health: /api/health`)
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`)
 
-  // Run database migration for hostel owner bank details columns
+  // Run database migration for hostel owner bank details and onboarding camera columns
   try {
     const db = require('./config/db')
     await db.query(`
@@ -171,11 +267,20 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
       ALTER TABLE hostel_owners ADD COLUMN IF NOT EXISTS account_holder VARCHAR(150);
       ALTER TABLE hostel_owners ADD COLUMN IF NOT EXISTS account_number VARCHAR(50);
       ALTER TABLE hostel_owners ADD COLUMN IF NOT EXISTS ifsc_code VARCHAR(20);
+      ALTER TABLE hostel_owners ADD COLUMN IF NOT EXISTS profile_photo_url TEXT;
+      ALTER TABLE hostel_owners ADD COLUMN IF NOT EXISTS profile_photo_uploaded_at TIMESTAMP;
       
       ALTER TABLE students ADD COLUMN IF NOT EXISTS advance_amount DECIMAL(10,2) DEFAULT 0;
       ALTER TABLE students ADD COLUMN IF NOT EXISTS monthly_payment_day INT DEFAULT 5;
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS profile_photo_url TEXT;
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS aadhaar_front_url TEXT;
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS aadhaar_back_url TEXT;
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS college_id_url TEXT;
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS document_status VARCHAR(50) DEFAULT 'pending';
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS verified_by VARCHAR(255);
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS verified_at TIMESTAMP;
     `)
-    console.log('✅ Database migration: Bank details and student columns verified/added successfully')
+    console.log('✅ Database migration: Bank details, student, and onboarding columns verified/added successfully')
   } catch (err) {
     console.error('⚠️ Database migration failed:', err.message)
   }

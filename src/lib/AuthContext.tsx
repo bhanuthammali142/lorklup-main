@@ -2,7 +2,8 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import {
   apiAuth, apiStudents, clearToken,
-  setStoredUser, type ApiUser
+  setStoredUser, type ApiUser, initStoredAuth,
+  getToken, getStoredUser
 } from './api-client'
 
 export interface StudentData {
@@ -71,26 +72,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   useEffect(() => {
-    const token = localStorage.getItem('hostelOS_token')
-    const userStr = localStorage.getItem('hostelOS_user')
+    const initializeAuth = async () => {
+      try {
+        await initStoredAuth()
+        const token = getToken()
+        const storedUser = getStoredUser()
 
-    if (!token || !userStr) {
-      setLoading(false)
-      return
-    }
-
-    // Use stored user immediately so UI loads fast
-    try {
-      const parsedUser: ApiUser = JSON.parse(userStr)
-      setUserState(parsedUser)
-
-      const initialize = async () => {
-        if (parsedUser.role === 'student') {
-          await loadStudentData(parsedUser)
+        if (!token || !storedUser) {
+          setLoading(false)
+          return
         }
-      }
 
-      initialize().finally(() => {
+        setUserState(storedUser)
+
+        if (storedUser.role === 'student') {
+          await loadStudentData(storedUser)
+        }
+
         setLoading(false)
 
         // Refresh token/user from API in background
@@ -104,18 +102,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           })
           .catch(() => {
             // Token expired — sign out silently
-            localStorage.removeItem('hostelOS_token')
-            localStorage.removeItem('hostelOS_user')
+            clearToken()
             setUserState(null)
             setStudentData(null)
           })
-      })
-    } catch {
-      // Corrupted stored data
-      localStorage.removeItem('hostelOS_token')
-      localStorage.removeItem('hostelOS_user')
-      setLoading(false)
+      } catch (err) {
+        console.error('[AuthContext] Auth initialization failed:', err)
+        clearToken()
+        setLoading(false)
+      }
     }
+
+    initializeAuth()
   }, [loadStudentData])
 
   const setUser = useCallback(async (u: ApiUser) => {

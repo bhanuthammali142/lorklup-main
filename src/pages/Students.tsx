@@ -5,7 +5,8 @@ import { Plus, Search, Filter, MoreVertical, FileText, Trash2, Loader2, Eye, X, 
 import { AddStudentModal } from '../components/AddStudentModal'
 import { ImportStudentsModal } from '../components/ImportStudentsModal'
 import { useAuth } from '../lib/AuthContext'
-import { getOrCreateHostel, getStudents, deleteStudent, exportStudentsCSV } from '../lib/api'
+import { getOrCreateHostel, getStudents, deleteStudent, exportStudentsCSV, updateStudent } from '../lib/api'
+import { getDocumentUrl } from '../lib/api-client'
 import type { Student } from '../types'
 import toast from 'react-hot-toast'
 import { Skeleton } from '../components/Skeleton'
@@ -35,6 +36,29 @@ export function Students() {
   })
 
   const loading = isLoading || isFetching
+
+  const handleUpdateDocStatus = async (studentId: string, status: 'verified' | 'rejected') => {
+    try {
+      const updateData: any = {
+        document_status: status
+      }
+      if (status === 'verified') {
+        updateData.verified_by = user?.name || 'Administrator'
+        updateData.verified_at = new Date().toISOString()
+      } else {
+        updateData.verified_by = null
+        updateData.verified_at = null
+      }
+      
+      await updateStudent(studentId, updateData)
+      toast.success(`Documents marked as ${status}`)
+      queryClient.invalidateQueries({ queryKey: ['students', hostelId] })
+      setSelectedStudent(prev => prev ? { ...prev, ...updateData } : null)
+    } catch (err) {
+      toast.error('Failed to update document status.')
+      console.error(err)
+    }
+  }
 
   useEffect(() => {
     if (!user) return
@@ -104,9 +128,13 @@ export function Students() {
             <div className="p-6 space-y-6">
               {/* Avatar + Name */}
               <div className="flex items-center gap-4">
-                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-bold uppercase flex-shrink-0">
-                  {selectedStudent.full_name.charAt(0)}
-                </div>
+                {selectedStudent.profile_photo_url ? (
+                  <img src={getDocumentUrl(selectedStudent.profile_photo_url)} alt={selectedStudent.full_name} className="h-16 w-16 rounded-full object-cover flex-shrink-0 border border-slate-200 dark:border-slate-800" />
+                ) : (
+                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-bold uppercase flex-shrink-0">
+                    {selectedStudent.full_name.charAt(0)}
+                  </div>
+                )}
                 <div>
                   <h3 className="text-xl font-bold text-slate-900">{selectedStudent.full_name}</h3>
                   <div className="flex items-center gap-2 mt-1">
@@ -160,24 +188,70 @@ export function Students() {
 
               {/* Document Photos */}
               <div>
-                <h4 className="text-sm font-semibold text-slate-700 mb-3">📂 Uploaded Documents</h4>
+                <div className="flex justify-between items-center mb-3">
+                  <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">📂 Verification Documents</h4>
+                  <div className="text-xs">
+                    Status:{' '}
+                    <span className={`font-bold uppercase tracking-wider px-2 py-0.5 rounded-full text-[10px] ${
+                      selectedStudent.document_status === 'verified' ? "text-emerald-700 bg-emerald-50 border border-emerald-200" :
+                      selectedStudent.document_status === 'rejected' ? "text-rose-700 bg-rose-50 border border-rose-200" :
+                                                              "text-amber-700 bg-amber-50 border border-amber-200"
+                    }`}>
+                      {selectedStudent.document_status || 'pending'}
+                    </span>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { label: 'Aadhaar Card', url: (selectedStudent as any).aadhaar_photo },
-                    { label: 'ID Card', url: (selectedStudent as any).id_card_photo },
+                    { label: 'Profile Photo', url: selectedStudent.profile_photo_url },
+                    { label: 'Aadhaar Card Front', url: selectedStudent.aadhaar_front_url },
+                    { label: 'Aadhaar Card Back', url: selectedStudent.aadhaar_back_url },
+                    { label: 'College ID Card', url: selectedStudent.college_id_url },
                   ].map(({ label, url }) => (
-                    <div key={label} className="border border-slate-200 rounded-xl overflow-hidden">
+                    <div key={label} className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-950/20">
                       {url
-                        ? <img src={url} alt={label} className="w-full h-28 object-cover" />
-                        : <div className="h-28 bg-slate-50 flex flex-col items-center justify-center gap-2 text-slate-300">
+                        ? <a href={getDocumentUrl(url)} target="_blank" rel="noreferrer" title="Click to view full image">
+                            <img src={getDocumentUrl(url)} alt={label} className="w-full h-28 object-cover hover:opacity-90 transition-opacity" />
+                          </a>
+                        : <div className="h-28 bg-slate-50 dark:bg-slate-900 flex flex-col items-center justify-center gap-2 text-slate-300 dark:text-slate-700">
                             <ImageOff className="h-6 w-6" />
                             <span className="text-xs">Not uploaded</span>
                           </div>
                       }
-                      <div className="p-2 bg-slate-50 border-t border-slate-100 text-center text-xs font-medium text-slate-600">{label}</div>
+                      <div className="p-2 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 text-center text-[10px] font-semibold text-slate-600 dark:text-slate-400">{label}</div>
                     </div>
                   ))}
                 </div>
+
+                {/* Verification Actions */}
+                {selectedStudent.document_status !== 'verified' && (
+                  <div className="flex gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <button
+                      onClick={() => handleUpdateDocStatus(selectedStudent.id, 'verified')}
+                      className="flex-1 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition active:scale-95 shadow-md flex items-center justify-center gap-1.5"
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5" /> Verify Docs
+                    </button>
+                    <button
+                      onClick={() => handleUpdateDocStatus(selectedStudent.id, 'rejected')}
+                      className="flex-1 py-2 rounded-xl text-xs font-bold bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 transition active:scale-95 flex items-center justify-center gap-1.5"
+                    >
+                      <X className="h-3.5 w-3.5" /> Reject Docs
+                    </button>
+                  </div>
+                )}
+                
+                {selectedStudent.document_status === 'verified' && (
+                  <div className="mt-4 p-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900 rounded-xl text-xs text-emerald-800 dark:text-emerald-400 font-semibold space-y-1">
+                    <p className="flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Documents verified successfully</p>
+                    {selectedStudent.verified_by && (
+                      <p className="text-[10px] text-emerald-600/80 dark:text-emerald-500/80">
+                        Verified by: {selectedStudent.verified_by} {selectedStudent.verified_at ? `on ${new Date(selectedStudent.verified_at).toLocaleDateString('en-IN')}` : ''}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               <button onClick={() => handleDelete(selectedStudent.id, selectedStudent.full_name)} className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-rose-600 border border-rose-200 rounded-xl hover:bg-rose-50 transition-colors">
@@ -311,16 +385,22 @@ export function Students() {
                 <div key={student.id} onClick={() => setSelectedStudent(student)} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3 cursor-pointer hover:border-blue-300 transition-colors">
                    <div className="flex justify-between items-start">
                      <div className="flex items-center gap-3">
-                       <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 text-white flex items-center justify-center font-bold uppercase flex-shrink-0">
-                         {student.full_name.charAt(0)}
-                       </div>
+                       {student.profile_photo_url ? (
+                         <img src={getDocumentUrl(student.profile_photo_url)} alt={student.full_name} className="h-10 w-10 rounded-full object-cover flex-shrink-0 border border-slate-200" loading="lazy" />
+                       ) : (
+                         <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 text-white flex items-center justify-center font-bold uppercase flex-shrink-0">
+                           {student.full_name.charAt(0)}
+                         </div>
+                       )}
                        <div className="flex flex-col min-w-[120px]">
                          <span className="font-semibold text-slate-900 truncate">{student.full_name}</span>
                          <span className="text-xs text-slate-500 truncate">{student.id_number ? `${student.id_number} · ` : ''}{student.phone}</span>
                        </div>
                      </div>
-                     {student.is_verified
+                     {student.document_status === 'verified'
                         ? <span className="inline-flex shrink-0 items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200"><CheckCircle2 className="h-3 w-3" />Verified</span>
+                        : student.document_status === 'rejected'
+                        ? <span className="inline-flex shrink-0 items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-rose-50 text-rose-700 border border-rose-200"><AlertCircle className="h-3 w-3" />Rejected</span>
                         : <span className="inline-flex shrink-0 items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200"><AlertCircle className="h-3 w-3" />Pending</span>
                      }
                    </div>
@@ -361,9 +441,13 @@ export function Students() {
                   <tr key={student.id} className="hover:bg-slate-50/50 transition-colors group cursor-pointer" onClick={() => setSelectedStudent(student)}>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 text-white flex items-center justify-center font-bold uppercase flex-shrink-0">
-                          {student.full_name.charAt(0)}
-                        </div>
+                        {student.profile_photo_url ? (
+                          <img src={getDocumentUrl(student.profile_photo_url)} alt={student.full_name} className="h-10 w-10 rounded-full object-cover flex-shrink-0 border border-slate-200" loading="lazy" />
+                        ) : (
+                          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 text-white flex items-center justify-center font-bold uppercase flex-shrink-0">
+                            {student.full_name.charAt(0)}
+                          </div>
+                        )}
                         <div className="flex flex-col min-w-0">
                           <span className="font-semibold text-slate-900">{student.full_name}</span>
                           <span className="text-xs text-slate-500">{student.id_number ? `${student.id_number} · ` : ''}{student.phone}</span>
@@ -389,8 +473,10 @@ export function Students() {
                       {new Date(student.joining_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </td>
                     <td className="px-6 py-4">
-                      {student.is_verified
+                      {student.document_status === 'verified'
                         ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200"><CheckCircle2 className="h-3 w-3" />Verified</span>
+                        : student.document_status === 'rejected'
+                        ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200"><AlertCircle className="h-3 w-3" />Rejected</span>
                         : <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200"><AlertCircle className="h-3 w-3" />Pending</span>
                       }
                     </td>
