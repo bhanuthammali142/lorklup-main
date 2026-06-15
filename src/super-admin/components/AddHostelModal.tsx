@@ -293,17 +293,17 @@ export function AddHostelModal({
 
   return (
     <ModalShell onClose={onClose}>
-      <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between shrink-0">
+      <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
         <div>
-          <h2 className="text-lg font-black text-slate-900">Add New Hostel</h2>
-          <p className="text-xs text-slate-500 mt-0.5">Step {step} of {totalSteps}</p>
+          <h2 className="text-lg font-black text-slate-900 dark:text-white">Add New Hostel</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Step {step} of {totalSteps}</p>
         </div>
-        <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl transition">
-          <X className="h-5 w-5 text-slate-500" />
+        <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition">
+          <X className="h-5 w-5 text-slate-500 dark:text-slate-400" />
         </button>
       </div>
 
-      <div className="flex border-b border-slate-100 px-4 sm:px-6 pt-4 gap-1 sm:gap-2 shrink-0 overflow-x-auto no-scrollbar">
+      <div className="flex border-b border-slate-100 dark:border-slate-800 px-4 sm:px-6 pt-4 gap-1 sm:gap-2 shrink-0 overflow-x-auto no-scrollbar">
         {visibleSteps.map(s => {
           const Icon = s.icon
           const active = step === s.id
@@ -312,7 +312,7 @@ export function AddHostelModal({
             <button
               key={s.id}
               onClick={() => isDone && setStep(s.id)}
-              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold transition whitespace-nowrap border-b-2 -mb-px ${active ? 'border-indigo-600 text-indigo-600' : isDone ? 'border-emerald-400 text-emerald-600 cursor-pointer hover:bg-emerald-50 rounded-t-lg' : 'border-transparent text-slate-400'}`}
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold transition whitespace-nowrap border-b-2 -mb-px ${active ? 'border-indigo-600 text-indigo-600' : isDone ? 'border-emerald-400 text-emerald-600 cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-t-lg' : 'border-transparent text-slate-400 dark:text-slate-500'}`}
             >
               <Icon className="h-4 w-4 sm:h-3.5 sm:w-3.5 shrink-0" />
               <span className={active || isDone ? "block" : "hidden sm:block"}>
@@ -340,7 +340,7 @@ export function AddHostelModal({
         {step === 2 && (
           <div className="space-y-4">
             <SectionTitle>Owner / admin details</SectionTitle>
-            <p className="text-xs text-slate-500 bg-blue-50 border border-blue-100 rounded-xl p-3">
+            <p className="text-xs text-slate-500 dark:text-slate-400 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 rounded-xl p-3">
               A login account will be created with the email below. The owner should change the password after first login.
             </p>
             <Field label="Full name *" value={ownerName} onChange={setOwnerName} placeholder="Owner full name" />
@@ -367,26 +367,26 @@ export function AddHostelModal({
               </button>
             </div>
             {floors.map((floor, fi) => (
-              <div key={fi} className="border border-slate-200 rounded-2xl overflow-hidden">
-                <div className="bg-slate-50 px-4 py-3 flex items-center justify-between border-b border-slate-200">
+              <div key={fi} className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
+                <div className="bg-slate-50 dark:bg-slate-950 px-4 py-3 flex items-center justify-between border-b border-slate-200 dark:border-slate-800">
                   <input
                     value={floor.floorName}
                     onChange={e => updateFloor(fi, 'floorName', e.target.value)}
-                    className="bg-transparent font-bold text-slate-900 text-sm outline-none w-40"
+                    className="bg-transparent font-bold text-slate-900 dark:text-slate-100 text-sm outline-none w-40"
                   />
-                  <button onClick={() => addRoom(fi)} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-white border border-indigo-200 px-2.5 py-1 rounded-lg transition">
+                  <button onClick={() => addRoom(fi)} className="text-xs font-bold text-indigo-600 hover:text-indigo-850 bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 px-2.5 py-1 rounded-lg transition">
                     + Add room
                   </button>
                 </div>
                 <div className="p-3 space-y-2">
                   {floor.rooms.map((room, ri) => (
-                    <div key={ri} className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-2 items-end bg-white border border-slate-100 rounded-xl px-3 py-2.5">
+                    <div key={ri} className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-2 items-end bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-xl px-3 py-2.5">
                       <div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Room No.</p>
                         <input
                           value={room.roomNumber}
                           onChange={e => updateRoom(fi, ri, 'roomNumber', e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-sm font-bold focus:ring-1 focus:ring-indigo-400 outline-none"
+                          className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-2 py-1.5 text-sm font-bold focus:ring-1 focus:ring-indigo-400 outline-none"
                         />
                       </div>
                       <div>
@@ -394,7 +394,7 @@ export function AddHostelModal({
                         <select
                           value={room.type}
                           onChange={e => updateRoom(fi, ri, 'type', e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-sm font-bold focus:ring-1 focus:ring-indigo-400 outline-none"
+                          className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-2 py-1.5 text-sm font-bold focus:ring-1 focus:ring-indigo-400 outline-none"
                         >
                           <option>Non-AC</option>
                           <option>AC</option>
@@ -406,7 +406,7 @@ export function AddHostelModal({
                           type="number" min={1} max={10}
                           value={room.beds}
                           onChange={e => updateRoom(fi, ri, 'beds', Number(e.target.value))}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-sm font-bold focus:ring-1 focus:ring-indigo-400 outline-none"
+                          className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-2 py-1.5 text-sm font-bold focus:ring-1 focus:ring-indigo-400 outline-none"
                         />
                       </div>
                       <div>
@@ -416,7 +416,7 @@ export function AddHostelModal({
                             type="number" min={0}
                             value={room.monthlyFee}
                             onChange={e => updateRoom(fi, ri, 'monthlyFee', Number(e.target.value))}
-                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-sm font-bold focus:ring-1 focus:ring-indigo-400 outline-none"
+                            className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-lg px-2 py-1.5 text-sm font-bold focus:ring-1 focus:ring-indigo-400 outline-none"
                           />
                           {floor.rooms.length > 1 && (
                             <button
@@ -433,7 +433,7 @@ export function AddHostelModal({
                 </div>
               </div>
             ))}
-            <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-xs text-indigo-700 font-semibold">
+            <div className="bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900 p-3 text-xs text-indigo-700 dark:text-indigo-400 font-semibold rounded-xl">
               Total: {floors.length} floors · {floors.reduce((a, f) => a + f.rooms.length, 0)} rooms · {floors.reduce((a, f) => a + f.rooms.reduce((b, r) => b + r.beds, 0), 0)} beds
             </div>
           </div>
@@ -445,9 +445,9 @@ export function AddHostelModal({
             <SectionTitle>Weekly food menu</SectionTitle>
             <p className="text-xs text-slate-500">The hostel owner can edit this anytime from their dashboard.</p>
             {DAYS.map(day => (
-              <div key={day} className="border border-slate-200 rounded-2xl overflow-hidden">
-                <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-100">
-                  <p className="text-sm font-bold text-slate-900">{day}</p>
+              <div key={day} className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
+                <div className="bg-slate-50 dark:bg-slate-950 px-4 py-2.5 border-b border-slate-100 dark:border-slate-800">
+                  <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{day}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3 p-3">
                   {MEALS.map(meal => (
@@ -457,7 +457,7 @@ export function AddHostelModal({
                         value={menu[day][meal]}
                         onChange={e => setMenu(m => ({ ...m, [day]: { ...m[day], [meal]: e.target.value } }))}
                         placeholder="e.g. Idli, Sambar"
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:ring-1 focus:ring-indigo-400 outline-none"
+                        className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl px-3 py-2 text-xs font-medium focus:ring-1 focus:ring-indigo-400 outline-none"
                       />
                     </div>
                   ))}
@@ -482,9 +482,9 @@ export function AddHostelModal({
         )}
       </div>
 
-      <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between shrink-0 bg-white">
+      <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-white dark:bg-slate-900">
         <button onClick={handleBack} disabled={step === 1}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition disabled:opacity-30">
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 transition disabled:opacity-30">
           <ChevronLeft className="h-4 w-4" /> Back
         </button>
         
@@ -513,7 +513,7 @@ function ModalShell({ children, onClose }: { children: React.ReactNode; onClose:
       aria-modal="true"
       aria-label="Add New Hostel"
     >
-      <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-xl w-full max-w-2xl max-h-[95vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-200">
+      <div className="bg-white dark:bg-slate-900 border dark:border-slate-800/85 rounded-t-3xl sm:rounded-2xl shadow-xl w-full max-w-2xl max-h-[95vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-200 text-slate-900 dark:text-slate-100">
         {children}
       </div>
     </div>
@@ -527,10 +527,10 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 function Field({ label, value, onChange, placeholder, type = 'text' }: any) {
   return (
     <div>
-      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">{label}</label>
+      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1.5">{label}</label>
       <input
         type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:outline-none transition placeholder:text-slate-300"
+        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm font-semibold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:outline-none transition placeholder:text-slate-300 dark:placeholder:text-slate-700"
       />
     </div>
   )
