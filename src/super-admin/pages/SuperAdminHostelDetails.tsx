@@ -7,7 +7,8 @@ import {
   Mail, Phone, MapPin, Calendar, Search, ShieldCheck,
   TrendingUp, CreditCard, AlertCircle, Loader2, Award
 } from 'lucide-react'
-import { apiHostels, apiSuperAdmin, apiRooms } from '../../lib/api-client'
+import { apiHostels, apiSuperAdmin, apiRooms, getDocumentUrl } from '../../lib/api-client'
+
 
 function safeExtractArray(res: any): any[] {
   if (!res) return []
@@ -259,26 +260,34 @@ export function SuperAdminHostelDetails() {
 
             <div className="space-y-6">
               {/* Owner Info */}
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
-                <h3 className="font-bold text-slate-900 text-sm uppercase tracking-widest border-b border-slate-100 pb-3 flex items-center gap-2">
-                  <Award className="h-4 w-4 text-indigo-600" /> Owner Details
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 space-y-4 text-slate-900 dark:text-slate-100">
+                <h3 className="font-bold text-slate-900 dark:text-white text-sm uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center gap-2">
+                  <Award className="h-4 w-4 text-indigo-600 dark:text-indigo-400" /> Owner Details
                 </h3>
                 <div className="space-y-3.5 text-sm">
                   <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center font-bold text-indigo-600">
-                      {hostel.owner_name?.charAt(0).toUpperCase() || 'O'}
-                    </div>
+                    {hostel.owner_profile_photo_url ? (
+                      <img
+                        src={getDocumentUrl(hostel.owner_profile_photo_url)}
+                        alt={hostel.owner_name}
+                        className="h-9 w-9 rounded-full object-cover border border-slate-200 dark:border-slate-800 flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="h-9 w-9 rounded-full bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900 flex items-center justify-center font-bold text-indigo-600 dark:text-indigo-400 flex-shrink-0">
+                        {hostel.owner_name?.charAt(0).toUpperCase() || 'O'}
+                      </div>
+                    )}
                     <div>
-                      <p className="font-bold text-slate-900">{hostel.owner_name || 'No Owner'}</p>
-                      <p className="text-xs text-slate-400 uppercase font-semibold">Tenant Administrator</p>
+                      <p className="font-bold text-slate-900 dark:text-white">{hostel.owner_name || 'No Owner'}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 uppercase font-semibold">Tenant Administrator</p>
                     </div>
                   </div>
-                  <div className="space-y-2 border-t border-slate-100 pt-3">
-                    <div className="flex items-center gap-2 text-xs text-slate-600">
+                  <div className="space-y-2 border-t border-slate-100 dark:border-slate-800 pt-3">
+                    <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-350">
                       <Mail className="h-4 w-4 text-slate-400 shrink-0" />
                       <span className="truncate">{hostel.owner_email || '—'}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-600">
+                    <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-350">
                       <Phone className="h-4 w-4 text-slate-400 shrink-0" />
                       <span>{hostel.owner_phone || '—'}</span>
                     </div>

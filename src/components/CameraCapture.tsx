@@ -25,20 +25,32 @@ export function CameraCapture({ onPhotoSelected, label = 'Upload Photo', shape =
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user')
   const [hasMultipleCameras, setHasMultipleCameras] = useState(false)
   const [stream, setStream] = useState<MediaStream | null>(null)
+  const [zoom, setZoom] = useState(1)
+  const [isNativelyZoomed, setIsNativelyZoomed] = useState(false)
   
   const videoRef = useRef<HTMLVideoElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const isMobileDevice = !isNative() && (
+    /Mobi|Android|iPhone|iPad|Macintosh/i.test(navigator.userAgent) ||
+    (typeof window !== 'undefined' && 'ontouchstart' in window)
+  )
+
+  const checkCameras = async () => {
+    if (!isNative() && navigator.mediaDevices?.enumerateDevices) {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices()
+        const videoDevices = devices.filter(device => device.kind === 'videoinput')
+        setHasMultipleCameras(videoDevices.length > 1)
+      } catch (err) {
+        console.warn('Error enumerating cameras:', err)
+      }
+    }
+  }
+
   // Enumerate cameras on browser mount
   useEffect(() => {
-    if (!isNative() && navigator.mediaDevices?.enumerateDevices) {
-      navigator.mediaDevices.enumerateDevices()
-        .then(devices => {
-          const videoDevices = devices.filter(device => device.kind === 'videoinput')
-          setHasMultipleCameras(videoDevices.length > 1)
-        })
-        .catch(err => console.warn('Error enumerating cameras:', err))
-    }
+    checkCameras()
   }, [])
 
   // Cleanup stream on unmount
@@ -146,6 +158,25 @@ export function CameraCapture({ onPhotoSelected, label = 'Upload Photo', shape =
       })
       setStream(newStream)
       setWebcamActive(true)
+      checkCameras()
+
+      // Try to apply native zoom constraint
+      const track = newStream.getVideoTracks()[0]
+      if (track) {
+        const capabilities = (typeof track.getCapabilities === 'function') ? track.getCapabilities() as any : null
+        if (capabilities && capabilities.zoom) {
+          try {
+            await track.applyConstraints({
+              advanced: [{ zoom: zoom } as any]
+            })
+            setIsNativelyZoomed(true)
+          } catch (e) {
+            setIsNativelyZoomed(false)
+          }
+        } else {
+          setIsNativelyZoomed(false)
+        }
+      }
     } catch (err: any) {
       console.error('Error starting webcam:', err)
       setWebcamError('Camera access denied or unavailable. Please upload a file instead.')
@@ -161,14 +192,40 @@ export function CameraCapture({ onPhotoSelected, label = 'Upload Photo', shape =
       setStream(null)
     }
     setWebcamActive(false)
+    setZoom(1)
+    setIsNativelyZoomed(false)
   }
 
   const toggleCamera = () => {
     const nextMode = facingMode === 'user' ? 'environment' : 'user'
     setFacingMode(nextMode)
+    setZoom(1)
+    setIsNativelyZoomed(false)
     if (webcamActive) {
       startWebcam(nextMode)
     }
+  }
+
+  const handleZoomChange = async (val: number) => {
+    setZoom(val)
+    if (stream) {
+      const track = stream.getVideoTracks()[0]
+      if (track) {
+        try {
+          const capabilities = (typeof track.getCapabilities === 'function') ? track.getCapabilities() as any : null
+          if (capabilities && capabilities.zoom) {
+            await track.applyConstraints({
+              advanced: [{ zoom: val } as any]
+            })
+            setIsNativelyZoomed(true)
+            return
+          }
+        } catch (err) {
+          console.warn('Failed to apply native zoom:', err)
+        }
+      }
+    }
+    setIsNativelyZoomed(false)
   }
 
   const captureWebcamFrame = () => {
@@ -193,12 +250,15 @@ export function CameraCapture({ onPhotoSelected, label = 'Upload Photo', shape =
     let sx = 0
     let sy = 0
 
+    const activeZoom = isNativelyZoomed ? 1 : zoom
+
     if (shape === 'circle') {
       const size = Math.min(videoWidth, videoHeight)
-      sWidth = size
-      sHeight = size
-      sx = (videoWidth - size) / 2
-      sy = (videoHeight - size) / 2
+      const zoomedSize = size / activeZoom
+      sWidth = zoomedSize
+      sHeight = zoomedSize
+      sx = (videoWidth - zoomedSize) / 2
+      sy = (videoHeight - zoomedSize) / 2
       canvas.width = Math.min(size, 800)
       canvas.height = Math.min(size, 800)
     } else {
@@ -211,10 +271,13 @@ export function CameraCapture({ onPhotoSelected, label = 'Upload Photo', shape =
         cropWidth = videoHeight * targetAspectRatio
       }
 
-      sWidth = cropWidth
-      sHeight = cropHeight
-      sx = (videoWidth - cropWidth) / 2
-      sy = (videoHeight - cropHeight) / 2
+      const zoomedWidth = cropWidth / activeZoom
+      const zoomedHeight = cropHeight / activeZoom
+
+      sWidth = zoomedWidth
+      sHeight = zoomedHeight
+      sx = (videoWidth - zoomedWidth) / 2
+      sy = (videoHeight - zoomedHeight) / 2
 
       canvas.width = Math.min(cropWidth, 1024)
       canvas.height = Math.min(cropHeight, Math.round(1024 / targetAspectRatio))
@@ -289,6 +352,8 @@ export function CameraCapture({ onPhotoSelected, label = 'Upload Photo', shape =
 
   // Render webcam viewport
   if (webcamActive) {
+    const showSwitchButton = hasMultipleCameras || isMobileDevice;
+
     return (
       <div className="relative w-full aspect-video sm:aspect-square bg-slate-950 rounded-2xl overflow-hidden border-2 border-indigo-500 shadow-xl flex flex-col justify-end">
         {loadingWebcam ? (
@@ -313,6 +378,10 @@ export function CameraCapture({ onPhotoSelected, label = 'Upload Photo', shape =
             playsInline
             muted
             className="w-full h-full object-cover"
+            style={{
+              transform: `${facingMode === 'user' ? 'scaleX(-1)' : 'scaleX(1)'} ${!isNativelyZoomed && zoom > 1 ? `scale(${zoom})` : 'scale(1)'}`,
+              transformOrigin: 'center'
+            }}
           />
         )}
 
@@ -324,6 +393,24 @@ export function CameraCapture({ onPhotoSelected, label = 'Upload Photo', shape =
             ) : (
               <div className="w-[80%] aspect-[1.58] max-w-sm rounded-2xl border-4 border-dashed border-indigo-400 shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]" />
             )}
+          </div>
+        )}
+
+        {/* Zoom Slider Control overlay */}
+        {!loadingWebcam && !webcamError && (
+          <div className="absolute bottom-20 left-1/2 -translate-x-1/2 w-[70%] max-w-xs bg-slate-900/80 backdrop-blur-md px-4 py-2 rounded-full border border-slate-700/50 flex items-center gap-3 z-10">
+            <span className="text-[10px] font-bold text-slate-400">1x</span>
+            <input
+              type="range"
+              min="1"
+              max="3"
+              step="0.1"
+              value={zoom}
+              onChange={(e) => handleZoomChange(parseFloat(e.target.value))}
+              className="w-full accent-indigo-550 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+            />
+            <span className="text-[10px] font-bold text-slate-400">3x</span>
+            <span className="text-[10px] font-black text-indigo-400 min-w-[24px] text-right">{zoom.toFixed(1)}x</span>
           </div>
         )}
 
@@ -341,13 +428,13 @@ export function CameraCapture({ onPhotoSelected, label = 'Upload Photo', shape =
           <button
             type="button"
             onClick={captureWebcamFrame}
-            className="p-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full border border-indigo-400 transition active:scale-90 shadow-lg"
+            className="p-4 bg-indigo-600 hover:bg-indigo-50 text-white rounded-full border border-indigo-400 transition active:scale-90 shadow-lg"
             title="Capture Photo"
           >
             <Camera className="h-6 w-6" />
           </button>
 
-          {hasMultipleCameras && (
+          {showSwitchButton && (
             <button
               type="button"
               onClick={toggleCamera}

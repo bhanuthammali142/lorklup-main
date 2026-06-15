@@ -8,11 +8,16 @@ const getHostels = async (req, res) => {
         if (req.user.role === 'super_admin') {
             const { rows } = await db.query(`
                 SELECT h.*,
+                       ho.owner_name,
+                       ho.owner_email,
+                       ho.owner_phone,
+                       ho.profile_photo_url AS owner_profile_photo_url,
                        s.plan_price AS subscription_price,
                        s.billing_cycle AS subscription_billing_cycle,
                        s.status AS subscription_status,
                        s.next_billing_date AS subscription_next_billing_date
                 FROM hostels h
+                JOIN hostel_owners ho ON ho.id = h.owner_id
                 LEFT JOIN subscriptions s ON s.hostel_id = h.id
                 ORDER BY h.created_at DESC
             `)
@@ -21,6 +26,10 @@ const getHostels = async (req, res) => {
             // admin: return only the hostel linked to this user
             const { rows } = await db.query(
                 `SELECT h.*,
+                        ho.owner_name,
+                        ho.owner_email,
+                        ho.owner_phone,
+                        ho.profile_photo_url AS owner_profile_photo_url,
                         s.plan_price AS subscription_price,
                         s.billing_cycle AS subscription_billing_cycle,
                         s.status AS subscription_status,
