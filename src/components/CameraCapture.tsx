@@ -170,8 +170,15 @@ export function CameraCapture({ onPhotoSelected, label = 'Upload Photo', shape =
   const captureWebcamFrame = () => {
     if (!videoRef.current) return
     const video = videoRef.current
-    const videoWidth = video.videoWidth
-    const videoHeight = video.videoHeight
+    let videoWidth = video.videoWidth
+    let videoHeight = video.videoHeight
+
+    if (!videoWidth || !videoHeight) {
+      const track = stream?.getVideoTracks()[0]
+      const settings = track?.getSettings()
+      videoWidth = settings?.width || 640
+      videoHeight = settings?.height || 480
+    }
 
     const canvas = document.createElement('canvas')
     const ctx = canvas.getContext('2d')
