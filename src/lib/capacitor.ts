@@ -3,15 +3,15 @@
  * HOSTELOS CAPACITOR INTEGRATION — Exposes unified wrappers for native plugins with automated web fallbacks.
  */
 
+import { Capacitor } from '@capacitor/core'
+
 // Simple helper to check if running in a Capacitor native app wrapper
 export function isNative(): boolean {
-  return typeof (window as any).Capacitor !== 'undefined'
+  return Capacitor.isNativePlatform()
 }
 
 export function getPlatform(): 'android' | 'ios' | 'web' {
-  if (!isNative()) return 'web'
-  const cap = (window as any).Capacitor
-  return cap.getPlatform() || 'web'
+  return Capacitor.getPlatform() as 'android' | 'ios' | 'web'
 }
 
 export function isAndroid(): boolean {
