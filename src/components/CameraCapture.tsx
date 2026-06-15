@@ -50,6 +50,13 @@ export function CameraCapture({ onPhotoSelected, label = 'Upload Photo', shape =
     }
   }, [stream])
 
+  // Bind stream to video element when mounted
+  useEffect(() => {
+    if (webcamActive && stream && videoRef.current) {
+      videoRef.current.srcObject = stream
+    }
+  }, [webcamActive, stream])
+
   // Convert native webPath to Base64
   const convertWebPathToBase64 = async (webPath: string): Promise<string> => {
     const response = await fetch(webPath)
@@ -138,9 +145,6 @@ export function CameraCapture({ onPhotoSelected, label = 'Upload Photo', shape =
         audio: false
       })
       setStream(newStream)
-      if (videoRef.current) {
-        videoRef.current.srcObject = newStream
-      }
       setWebcamActive(true)
     } catch (err: any) {
       console.error('Error starting webcam:', err)
