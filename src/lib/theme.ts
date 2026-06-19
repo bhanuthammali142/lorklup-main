@@ -1,44 +1,32 @@
 import { secureStorage } from './secure-storage';
 import { isNative } from './capacitor';
 
-export type ThemeMode = 'light' | 'dark' | 'system';
+export type ThemeMode = 'light';
 
 export const themeManager = {
   async getTheme(): Promise<ThemeMode> {
-    const saved = await secureStorage.getSecure('theme_mode');
-    return (saved as ThemeMode) || 'system';
+    return 'light';
   },
 
-  async setTheme(theme: ThemeMode): Promise<void> {
-    await secureStorage.setSecure('theme_mode', theme);
-    await this.applyTheme(theme);
+  async setTheme(_theme: ThemeMode): Promise<void> {
+    await secureStorage.setSecure('theme_mode', 'light');
+    await this.applyTheme('light');
   },
 
-  async applyTheme(theme: ThemeMode): Promise<void> {
-    let isDark = false;
-
-    if (theme === 'system') {
-      isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    } else {
-      isDark = theme === 'dark';
-    }
-
+  async applyTheme(_theme: ThemeMode): Promise<void> {
+    // Force light mode only
     const root = window.document.documentElement;
-    if (isDark) {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
+    root.classList.remove('dark');
 
-    // Update Status Bar if native
+    // Update Status Bar to light style if running on a native device
     if (isNative()) {
       try {
         const { StatusBar, Style } = await import('@capacitor/status-bar');
         await StatusBar.setStyle({
-          style: isDark ? Style.Dark : Style.Light
+          style: Style.Light
         });
         await StatusBar.setBackgroundColor({
-          color: isDark ? '#0b0f19' : '#ffffff'
+          color: '#ffffff'
         });
       } catch (e) {
         console.warn('Native StatusBar styling failed', e);
@@ -47,11 +35,7 @@ export const themeManager = {
   },
 
   initThemeListener(): void {
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', async () => {
-      const current = await this.getTheme();
-      if (current === 'system') {
-        this.applyTheme('system');
-      }
-    });
+    // No-op to disable dark-mode listeners
   }
 };
+

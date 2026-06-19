@@ -22,103 +22,8 @@
     --radius: 0.75rem;
   }
 
-  .dark {
-    --background: 224 71% 4%;
-    --foreground: 210 40% 98%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
-  }
-
-  /* Global dark-mode overrides for elements that don't have explicit dark: classes */
-  .dark {
-    background-color: #0b0f19;
-    color: #f8fafc;
-  }
-  
-  .dark .bg-white {
-    background-color: #0f172a !important; /* Dark Slate background for cards/modals/inputs */
-  }
-
-  .dark .bg-slate-50 {
-    background-color: #0b0f19 !important; /* Darker slate for sub-sections */
-  }
-
-  .dark .bg-slate-100 {
-    background-color: #1e293b !important;
-  }
-
-  /* Text Colors */
-  .dark .text-slate-950,
-  .dark .text-slate-900 {
-    color: #ffffff !important; /* Heading text contrast */
-  }
-
-  .dark .text-slate-800 {
-    color: #f1f5f9 !important; /* Subheading text contrast */
-  }
-
-  .dark .text-slate-750,
-  .dark .text-slate-700 {
-    color: #e2e8f0 !important; /* Normal text contrast */
-  }
-
-  .dark .text-slate-600 {
-    color: #cbd5e1 !important; /* Secondary text contrast */
-  }
-
-  .dark .text-slate-500 {
-    color: #94a3b8 !important; /* Muted text contrast */
-  }
-
-  .dark .text-slate-400 {
-    color: #64748b !important; /* Muted icons/placeholders */
-  }
-
-  /* Border Colors */
-  .dark .border-slate-100 {
-    border-color: #1e293b !important;
-  }
-
-  .dark .border-slate-200 {
-    border-color: #334155 !important;
-  }
-
-  /* Hover States */
-  .dark .hover\:bg-slate-50:hover {
-    background-color: #1e293b !important;
-  }
-
-  .dark .hover\:bg-slate-150:hover,
-  .dark .hover\:bg-slate-200:hover {
-    background-color: #334155 !important;
-  }
-  
-  .dark .hover\:text-slate-900:hover {
-    color: #ffffff !important;
-  }
-
-  /* Special UI Elements */
-  .dark select,
-  .dark input,
-  .dark textarea {
-    color-scheme: dark;
-  }
-  
-  /* Modal Overlay fallback */
-  .dark .bg-slate-900\/50,
-  .dark .bg-slate-900\/40 {
-    background-color: rgba(2, 6, 23, 0.7) !important;
-  }
-
   body {
-    @apply bg-[#fcfcfd] text-[#111827] dark:bg-[#0b0f19] dark:text-[#f8fafc] antialiased font-sans overflow-x-hidden;
+    @apply bg-[#fcfcfd] text-[#111827] antialiased font-sans overflow-x-hidden;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
@@ -147,19 +52,19 @@
   }
   
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-lg bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 shadow-[0_1px_2px_rgba(0,0,0,0.05)] border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 transition-all active:scale-[0.98];
+    @apply inline-flex items-center justify-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-[0_1px_2px_rgba(0,0,0,0.05)] border border-slate-200 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 transition-all active:scale-[0.98];
   }
 
   .card-premium {
-    @apply rounded-xl border border-slate-200/60 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.02)] transition-all hover:shadow-[0_4px_24px_rgba(0,0,0,0.04)] overflow-hidden;
+    @apply rounded-xl border border-slate-200/60 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.02)] transition-all hover:shadow-[0_4px_24px_rgba(0,0,0,0.04)] overflow-hidden;
   }
 
   .input-premium {
-    @apply w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-slate-100 shadow-[0_1px_2px_rgba(0,0,0,0.03)] focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600;
+    @apply w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 shadow-[0_1px_2px_rgba(0,0,0,0.03)] focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all placeholder:text-slate-400;
   }
 
   .glass-panel {
-    @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border border-white/20 dark:border-slate-800/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)];
+    @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-[0_8px_30px_rgb(0,0,0,0.04)];
   }
 }
 

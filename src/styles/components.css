@@ -10,12 +10,12 @@
   }
 
   .btn-premium-secondary {
-    @apply inline-flex items-center justify-center rounded-xl bg-slate-800 border border-slate-700/60 px-4 py-2.5 text-sm font-semibold text-slate-200 shadow-sm hover:bg-slate-700 active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-slate-500/50 disabled:opacity-50 disabled:pointer-events-none;
+    @apply inline-flex items-center justify-center rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 active:scale-[0.98] transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-slate-500/50 disabled:opacity-50 disabled:pointer-events-none;
     min-height: 44px;
   }
 
   .btn-premium-ghost {
-    @apply inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 active:scale-[0.98] transition-all duration-150 focus:outline-none disabled:opacity-50;
+    @apply inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-55 active:scale-[0.98] transition-all duration-150 focus:outline-none disabled:opacity-50;
     min-height: 44px;
   }
 
@@ -30,21 +30,21 @@
   }
 
   .label-premium {
-    @apply text-xs font-semibold text-slate-400 uppercase tracking-wider;
+    @apply text-[10px] font-bold text-slate-500 uppercase tracking-wider;
   }
 
   .input-premium {
-    @apply w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 shadow-inner placeholder:text-slate-500 transition-all duration-150 focus:border-blue-500/80 focus:ring-4 focus:ring-blue-500/10 focus:outline-none;
+    @apply w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 shadow-sm placeholder:text-slate-400 transition-all duration-150 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:outline-none;
     min-height: 44px;
   }
 
   /* Premium Cards */
   .card-premium {
-    @apply rounded-2xl border border-slate-800/80 bg-slate-900/90 shadow-lg transition-all duration-300 hover:shadow-xl hover:border-slate-700/60 overflow-hidden backdrop-blur-md;
+    @apply rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-all duration-300 hover:shadow-md hover:border-slate-300/60 overflow-hidden;
   }
 
   .card-premium-glow {
-    @apply card-premium hover:shadow-[0_0_20px_rgba(37,99,235,0.15)] hover:border-blue-500/30;
+    @apply card-premium hover:shadow-[0_0_20px_rgba(37,99,235,0.08)] hover:border-blue-500/20;
   }
 
   /* Badges */
@@ -53,50 +53,50 @@
   }
 
   .badge-premium-success {
-    @apply badge-premium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20;
+    @apply badge-premium bg-emerald-50 text-emerald-700 border border-emerald-200/60;
   }
 
   .badge-premium-warning {
-    @apply badge-premium bg-amber-500/10 text-amber-400 border border-amber-500/20;
+    @apply badge-premium bg-amber-50 text-amber-700 border border-amber-200/60;
   }
 
   .badge-premium-error {
-    @apply badge-premium bg-rose-500/10 text-rose-400 border border-rose-500/20;
+    @apply badge-premium bg-rose-50 text-rose-700 border border-rose-200/60;
   }
 
   .badge-premium-info {
-    @apply badge-premium bg-blue-500/10 text-blue-400 border border-blue-500/20;
+    @apply badge-premium bg-blue-50 text-blue-700 border border-blue-200/60;
   }
 
   /* Tables responsiveness overlay & styles */
   .table-container-responsive {
-    @apply w-full overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/40;
+    @apply w-full overflow-x-auto rounded-xl border border-slate-200 bg-white;
   }
 
   .table-premium {
-    @apply w-full border-collapse text-left text-sm text-slate-300;
+    @apply w-full border-collapse text-left text-sm text-slate-700;
   }
 
   .table-premium-th {
-    @apply bg-slate-900 px-4 py-3 text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800;
+    @apply bg-slate-50 px-4 py-3 text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200;
   }
 
   .table-premium-td {
-    @apply px-4 py-3.5 border-b border-slate-800/60 whitespace-nowrap align-middle;
+    @apply px-4 py-3.5 border-b border-slate-100 whitespace-nowrap align-middle;
   }
 
   /* Drawers */
   .drawer-overlay {
-    @apply fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm transition-opacity duration-300;
+    @apply fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm transition-opacity duration-300;
   }
 
   .drawer-content {
-    @apply fixed top-0 bottom-0 right-0 z-[201] w-full max-w-md bg-slate-950 border-l border-slate-800/80 shadow-2xl transition-transform duration-300 flex flex-col;
+    @apply fixed top-0 bottom-0 right-0 z-[201] w-full max-w-md bg-white border-l border-slate-200 shadow-2xl transition-transform duration-300 flex flex-col;
   }
 
   /* Bottom Sheets for mobile screens */
   .bottom-sheet-content {
-    @apply fixed bottom-0 left-0 right-0 z-[201] max-h-[85vh] rounded-t-3xl bg-slate-950 border-t border-slate-800 shadow-2xl transition-transform duration-300 flex flex-col overflow-hidden pb-[var(--safe-area-bottom)];
+    @apply fixed bottom-0 left-0 right-0 z-[201] max-h-[85vh] rounded-t-3xl bg-white border-t border-slate-200 shadow-2xl transition-transform duration-300 flex flex-col overflow-hidden pb-[var(--safe-area-bottom)];
   }
 
   /* Status Bar */
