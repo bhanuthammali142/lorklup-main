@@ -167,6 +167,39 @@ export const apiAuth = {
       method: 'PUT',
       body: JSON.stringify({ name, phone, email, bank_name, account_holder, account_number, ifsc_code }),
     }),
+
+  googleLogin: async (idToken: string) => {
+    const response = await request<{ token: string; user: ApiUser }>('/auth/google-login', {
+      method: 'POST',
+      body: JSON.stringify({ idToken }),
+    })
+    setToken(response.token)
+    setStoredUser(response.user)
+    return response
+  },
+
+  linkGoogle: (idToken: string) =>
+    request<{ success: boolean; message: string }>('/auth/link-google', {
+      method: 'POST',
+      body: JSON.stringify({ idToken }),
+    }),
+
+  unlinkGoogle: () =>
+    request<{ success: boolean; message: string }>('/auth/unlink-google', {
+      method: 'POST'
+    }),
+
+  logoutAll: async () => {
+    try {
+      await request('/auth/logout-all', { method: 'POST' })
+    } finally {
+      clearToken()
+      window.location.href = '/login'
+    }
+  },
+
+  googleStatus: () =>
+    request<{ isLinked: boolean; googleLinkedAt: string | null; authProvider: string; activities: any[] }>('/auth/google-status'),
 }
 
 // ── Hostels ──────────────────────────────────────────────────────────────────

@@ -4,7 +4,8 @@
  */
 import React, { useState, useEffect } from 'react'
 import { ShieldCheck, Loader2, Eye, EyeOff, AlertCircle, KeyRound } from 'lucide-react'
-import { initStoredAuth, getToken, getStoredUser, setToken, setStoredUser } from '../lib/api-client'
+import { initStoredAuth, getToken, getStoredUser, setToken, setStoredUser, apiAuth } from '../lib/api-client'
+import toast from 'react-hot-toast'
 
 const envApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api'
 const BASE_URL = envApiUrl.replace(/\/api$/, '')
@@ -28,6 +29,43 @@ export function Login() {
       }
     }
     checkAuth()
+
+    // Dynamically load Google GSI script
+    const script = document.createElement('script')
+    script.src = 'https://accounts.google.com/gsi/client'
+    script.async = true
+    script.defer = true
+    script.onload = () => {
+      try {
+        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'your-google-client-id.apps.googleusercontent.com'
+        if ((window as any).google) {
+          (window as any).google.accounts.id.initialize({
+            client_id: clientId,
+            callback: handleGoogleCallback,
+            auto_select: false,
+            cancel_on_tap_outside: true,
+          });
+
+          (window as any).google.accounts.id.renderButton(
+            document.getElementById('google-signin-button'),
+            {
+              theme: 'filled_blue',
+              size: 'large',
+              width: 380,
+              text: 'continue_with',
+              shape: 'rectangular',
+            }
+          );
+        }
+      } catch (err) {
+        console.error('Error initializing Google Sign-In:', err)
+      }
+    }
+    document.body.appendChild(script)
+
+    return () => {
+      document.body.removeChild(script)
+    }
   }, [])
 
   const redirectByRole = (role: string) => {
@@ -35,6 +73,21 @@ export function Login() {
     else if (role === 'admin')   window.location.href = '/admin/dashboard'
     else if (role === 'student') window.location.href = '/student/dashboard'
     else window.location.href = '/login'
+  }
+
+  const handleGoogleCallback = async (response: any) => {
+    setError('')
+    setLoading(true)
+
+    try {
+      const data = await apiAuth.googleLogin(response.credential)
+      toast.success('Welcome back!')
+      redirectByRole(data.user.role)
+    } catch (err: any) {
+      setError(err.message || 'Google Authentication failed.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleEmailLogin = async (e: React.FormEvent) => {
@@ -141,6 +194,19 @@ export function Login() {
               {loading ? 'Authenticating...' : 'Sign In'}
             </button>
           </form>
+
+          {/* Divider */}
+          <div className="relative my-5 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-800"></div>
+            </div>
+            <span className="relative bg-[#0f172a] px-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Or Continue With</span>
+          </div>
+
+          {/* Google Button */}
+          <div className="flex justify-center mb-2">
+            <div id="google-signin-button" className="w-full flex justify-center"></div>
+          </div>
 
           {/* Hint Credentials Box for demo purposes */}
           <div className="mt-6 p-4 bg-slate-950 rounded-2xl border border-slate-800/80">

@@ -263,6 +263,13 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
   try {
     const db = require('./config/db')
     await db.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(255) UNIQUE;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider VARCHAR(50) DEFAULT 'email';
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS google_linked_at TIMESTAMP;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INT DEFAULT 1;
+
       ALTER TABLE hostel_owners ADD COLUMN IF NOT EXISTS bank_name VARCHAR(100);
       ALTER TABLE hostel_owners ADD COLUMN IF NOT EXISTS account_holder VARCHAR(150);
       ALTER TABLE hostel_owners ADD COLUMN IF NOT EXISTS account_number VARCHAR(50);
@@ -280,7 +287,7 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
       ALTER TABLE students ADD COLUMN IF NOT EXISTS verified_by VARCHAR(255);
       ALTER TABLE students ADD COLUMN IF NOT EXISTS verified_at TIMESTAMP;
     `)
-    console.log('✅ Database migration: Bank details, student, and onboarding columns verified/added successfully')
+    console.log('✅ Database migration: Google Auth columns, bank details, student, and onboarding columns verified/added successfully')
   } catch (err) {
     console.error('⚠️ Database migration failed:', err.message)
   }

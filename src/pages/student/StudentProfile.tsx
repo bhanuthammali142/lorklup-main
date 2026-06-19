@@ -1,6 +1,7 @@
 import React from 'react'
 import { User, LogOut, FileText, Phone, Building, Bed, GraduationCap, Calendar, Hash, Mail, Shield, Eye, EyeOff, CheckCircle2, Loader2, Key, X } from 'lucide-react'
 import { useAuth } from '../../lib/AuthContext'
+import { apiAuth } from '../../lib/api-client'
 import toast from 'react-hot-toast'
 
 function InfoField({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
@@ -24,6 +25,93 @@ export function StudentProfile() {
   const [confirmPassword, setConfirmPassword] = React.useState('')
   const [showPassword, setShowPassword] = React.useState(false)
   const [savingPassword, setSavingPassword] = React.useState(false)
+
+  const [googleStatus, setGoogleStatus] = React.useState<{ isLinked: boolean; googleLinkedAt: string | null; authProvider: string; activities: any[] } | null>(null);
+  const [fetchingGoogleStatus, setFetchingGoogleStatus] = React.useState(false);
+  const [savingGoogle, setSavingGoogle] = React.useState(false);
+
+  const loadGoogleStatus = async () => {
+    if (user) {
+      setFetchingGoogleStatus(true);
+      try {
+        const res = await apiAuth.googleStatus();
+        setGoogleStatus(res);
+      } catch (err: any) {
+        console.error('Failed to load Google status:', err);
+      } finally {
+        setFetchingGoogleStatus(false);
+      }
+    }
+  };
+
+  React.useEffect(() => {
+    loadGoogleStatus();
+  }, [user]);
+
+  const handleUnlinkGoogle = async () => {
+    if (!confirm('Are you sure you want to unlink your Google Account?')) return;
+    setSavingGoogle(true);
+    try {
+      await apiAuth.unlinkGoogle();
+      toast.success('Google account unlinked successfully!');
+      loadGoogleStatus();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to unlink Google account.');
+    } finally {
+      setSavingGoogle(false);
+    }
+  };
+
+  const handleLogoutAll = async () => {
+    if (!confirm('Are you sure you want to log out from all devices? This will invalidate all your current active sessions.')) return;
+    setSavingGoogle(true);
+    try {
+      await apiAuth.logoutAll();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to logout from all devices.');
+    } finally {
+      setSavingGoogle(false);
+    }
+  };
+
+  React.useEffect(() => {
+    if (googleStatus && !googleStatus.isLinked) {
+      const renderLinkButton = () => {
+        if ((window as any).google && document.getElementById('google-link-button')) {
+          (window as any).google.accounts.id.initialize({
+            client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'your-google-client-id.apps.googleusercontent.com',
+            callback: async (response: any) => {
+              setSavingGoogle(true);
+              try {
+                await apiAuth.linkGoogle(response.credential);
+                toast.success('Google account linked successfully!');
+                loadGoogleStatus();
+              } catch (err: any) {
+                toast.error(err.message || 'Failed to link Google account.');
+              } finally {
+                setSavingGoogle(false);
+              }
+            }
+          });
+          (window as any).google.accounts.id.renderButton(
+            document.getElementById('google-link-button'),
+            { theme: 'outline', size: 'medium', text: 'signup_with' }
+          );
+        }
+      };
+
+      if (!(window as any).google) {
+        const script = document.createElement('script');
+        script.src = 'https://accounts.google.com/gsi/client';
+        script.async = true;
+        script.defer = true;
+        script.onload = renderLinkButton;
+        document.body.appendChild(script);
+      } else {
+        setTimeout(renderLinkButton, 100);
+      }
+    }
+  }, [googleStatus]);
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -168,6 +256,78 @@ export function StudentProfile() {
             </button>
             <button onClick={signOut} className="flex-1 flex items-center justify-center gap-2 bg-rose-50 text-rose-600 font-bold py-3 px-4 rounded-xl hover:bg-rose-100 transition-colors border border-rose-100">
               <LogOut className="h-5 w-5" /> Sign Out from Device
+            </button>
+          </div>
+
+          {/* Google Account Linking */}
+          <div className="mt-6 pt-6 border-t border-slate-100 space-y-4">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+              <Shield className="h-3.5 w-3.5" /> Google Sign-In Security
+            </h3>
+
+            {fetchingGoogleStatus ? (
+              <div className="flex justify-center p-4">
+                <Loader2 className="animate-spin h-5 w-5 text-slate-400" />
+              </div>
+            ) : googleStatus?.isLinked ? (
+              <div className="space-y-3">
+                <div className="p-3.5 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span className="text-xs font-bold text-emerald-950 font-sans">Linked to Google Account</span>
+                  </div>
+                  <button
+                    onClick={handleUnlinkGoogle}
+                    disabled={savingGoogle}
+                    className="text-xs font-bold text-rose-600 hover:text-rose-800 hover:underline transition"
+                  >
+                    Unlink Account
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-400">Linked at: {googleStatus.googleLinkedAt ? new Date(googleStatus.googleLinkedAt).toLocaleString('en-IN') : 'N/A'}</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl">
+                  <p className="text-xs text-slate-500 leading-normal font-sans">
+                    Connect your Google Account to allow logging in instantly and securely without typing your email and password.
+                  </p>
+                </div>
+                <div className="flex justify-start">
+                  <div id="google-link-button"></div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Session & Device Security Card */}
+          <div className="mt-6 pt-6 border-t border-slate-100 space-y-4">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+              <Shield className="h-3.5 w-3.5" /> Active Sessions & Device Security
+            </h3>
+            
+            <div className="space-y-2 max-h-48 overflow-y-auto pr-1 border-b border-slate-100 pb-4">
+              {googleStatus?.activities && googleStatus.activities.length > 0 ? (
+                googleStatus.activities.map((act: any, idx: number) => (
+                  <div key={idx} className="flex justify-between items-start text-xs border-b border-slate-50 py-2 last:border-0">
+                    <div className="pr-2 min-w-0">
+                      <p className="font-bold text-slate-800 font-sans">{act.event === 'LOGIN_SUCCESS' ? 'Login Success' : act.event === 'GOOGLE_LINKED' ? 'Google Account Linked' : act.event === 'GOOGLE_UNLINKED' ? 'Google Account Unlinked' : 'Login Failed'}</p>
+                      <p className="text-[10px] text-slate-400 truncate">{act.device || 'Unknown Device'} ({act.ip})</p>
+                    </div>
+                    <span className="text-[10px] text-slate-400 shrink-0 font-medium font-mono">{new Date(act.timestamp).toLocaleDateString('en-IN')}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-slate-400 italic">No recent activity logged.</p>
+              )}
+            </div>
+
+            <button
+              onClick={handleLogoutAll}
+              disabled={savingGoogle}
+              className="w-full py-3 bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100 font-bold rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-sm"
+            >
+              Logout from All Devices
             </button>
           </div>
         </div>

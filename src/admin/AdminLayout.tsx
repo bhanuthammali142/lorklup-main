@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Outlet, useLocation, Link, NavLink } from 'react-router-dom'
+import { Outlet, useLocation, Link, NavLink, useNavigate } from 'react-router-dom'
 import { AdminSidebar } from './components/AdminSidebar'
 import { Menu, AlertCircle, ShieldAlert, LayoutDashboard, Users, Bed, Wallet } from 'lucide-react'
 import { NotificationBell } from '../components/NotificationBell'
@@ -10,6 +10,7 @@ import { cn } from '../lib/utils'
 export function AdminLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
 
   const { data: billingData } = useQuery({
     queryKey: ['my-subscription'],
@@ -25,6 +26,12 @@ export function AdminLayout() {
   const daysRemaining = sub?.daysRemaining ?? 0
   const isExpired = sub?.isExpired ?? false
   const isPastGracePeriod = sub?.isPastGracePeriod ?? false
+
+  useEffect(() => {
+    if (isPastGracePeriod && location.pathname !== '/admin/billing') {
+      navigate('/admin/billing', { replace: true })
+    }
+  }, [isPastGracePeriod, location.pathname, navigate])
 
   // Close mobile menu on route change
   useEffect(() => {

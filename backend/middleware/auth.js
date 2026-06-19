@@ -21,7 +21,7 @@ async function verifyToken(req, res, next) {
 
     // Safety check: Verify the user exists and is active in the database
     const { rows } = await db.query(
-      'SELECT is_active, role FROM users WHERE id = $1',
+      'SELECT is_active, role, token_version FROM users WHERE id = $1',
       [decoded.id]
     )
 
@@ -31,6 +31,11 @@ async function verifyToken(req, res, next) {
 
     if (!rows[0].is_active) {
       return res.status(403).json({ error: 'User account has been suspended' })
+    }
+
+    // Check token version to handle logout from all devices / token rotation
+    if (decoded.token_version !== undefined && decoded.token_version !== rows[0].token_version) {
+      return res.status(401).json({ error: 'Session has been invalidated. Please log in again.' })
     }
 
     // Keep token values aligned with the database role
