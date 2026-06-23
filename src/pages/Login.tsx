@@ -38,12 +38,17 @@ export function Login() {
     script.onload = () => {
       try {
         const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'your-google-client-id.apps.googleusercontent.com'
+        console.log('🔑 Initializing Google Client ID:', clientId)
         if ((window as any).google) {
           (window as any).google.accounts.id.initialize({
             client_id: clientId,
             callback: handleGoogleCallback,
             auto_select: false,
             cancel_on_tap_outside: true,
+            error_callback: (err: any) => {
+              console.error('❌ Google accounts.id error:', err)
+              toast.error(`Google Sign-In initialization failed: ${err.message || JSON.stringify(err)}`)
+            }
           });
 
           (window as any).google.accounts.id.renderButton(
@@ -57,8 +62,9 @@ export function Login() {
             }
           );
         }
-      } catch (err) {
-        console.error('Error initializing Google Sign-In:', err)
+      } catch (err: any) {
+        console.error('❌ Error initializing Google Sign-In:', err)
+        toast.error(`Google Sign-In initialization error: ${err.message}`)
       }
     }
     document.body.appendChild(script)
@@ -78,13 +84,20 @@ export function Login() {
   const handleGoogleCallback = async (response: any) => {
     setError('')
     setLoading(true)
+    console.log('🔄 Google Callback received response credentials')
 
     try {
+      if (!response || !response.credential) {
+        throw new Error('Google did not return authentication credentials.')
+      }
       const data = await apiAuth.googleLogin(response.credential)
+      console.log('✅ Google Login successful:', data)
       toast.success('Welcome back!')
       redirectByRole(data.user.role)
     } catch (err: any) {
+      console.error('❌ Google Login failed:', err)
       setError(err.message || 'Google Authentication failed.')
+      toast.error(err.message || 'Google Authentication failed.')
     } finally {
       setLoading(false)
     }
