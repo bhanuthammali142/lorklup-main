@@ -170,7 +170,7 @@ const getAllHostels = async (req, res) => {
         const { status, search } = req.query;
         let query = `
             SELECT h.*,
-                   ho.owner_name, ho.owner_email, ho.owner_phone,
+                   ho.owner_name, ho.owner_email, ho.owner_phone, ho.profile_photo_url AS owner_profile_photo_url,
                    COUNT(DISTINCT s.id) AS student_count,
                    COUNT(DISTINCT r.id) AS room_count,
                    COALESCE(SUM(p.amount), 0) AS total_collected,
@@ -193,7 +193,7 @@ const getAllHostels = async (req, res) => {
             query += ` AND (h.hostel_name ILIKE $${params.length + 1} OR h.city ILIKE $${params.length + 2} OR ho.owner_name ILIKE $${params.length + 3})`;
             params.push(`%${search}%`, `%${search}%`, `%${search}%`);
         }
-        query += ' GROUP BY h.id, ho.owner_name, ho.owner_email, ho.owner_phone ORDER BY h.created_at DESC';
+        query += ' GROUP BY h.id, ho.owner_name, ho.owner_email, ho.owner_phone, ho.profile_photo_url ORDER BY h.created_at DESC';
 
         const { rows: hostels } = await db.query(query, params);
         res.json({ success: true, data: hostels });

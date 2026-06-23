@@ -9,7 +9,7 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Building2, Plus, Search, ShieldCheck, RefreshCw, Eye, X, MapPin, Phone, Mail, Calendar, Hash, Upload } from 'lucide-react'
-import { apiHostels } from '../../lib/api-client'
+import { apiHostels, apiSuperAdmin } from '../../lib/api-client'
 import { AddHostelModal } from '../components/AddHostelModal'
 import { ImportHostelsModal } from '../components/ImportHostelsModal'
 import toast from 'react-hot-toast'
@@ -26,7 +26,7 @@ export function SuperAdminHostels() {
   const load = async () => {
     setLoading(true)
     try {
-      const response = await apiHostels.getAll()
+      const response = await apiSuperAdmin.getHostels()
       
       // FIX: Extract array from response correctly
       // response is already the data array from api-client fix

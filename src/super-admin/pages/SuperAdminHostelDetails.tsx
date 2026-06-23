@@ -7,7 +7,7 @@ import {
   Mail, Phone, MapPin, Calendar, Search, ShieldCheck,
   TrendingUp, CreditCard, AlertCircle, Loader2, Award
 } from 'lucide-react'
-import { apiHostels, apiSuperAdmin, apiRooms, getDocumentUrl } from '../../lib/api-client'
+import { apiSuperAdmin, apiRooms, getDocumentUrl } from '../../lib/api-client'
 
 
 function safeExtractArray(res: any): any[] {
@@ -32,7 +32,7 @@ export function SuperAdminHostelDetails() {
   const { data: hostelsRaw = [], isLoading: loadingHostel } = useQuery<any[]>({
     queryKey: ['sa-hostels'],
     queryFn: async () => {
-      const res = await apiHostels.getAll()
+      const res = await apiSuperAdmin.getHostels()
       return safeExtractArray(res)
     },
   })
