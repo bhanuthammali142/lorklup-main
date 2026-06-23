@@ -31,8 +31,8 @@ export function AuthPage() {
     try {
       if (isLogin) {
         const { token, user: loggedIn } = await apiAuth.login(email, password)
-        setToken(token)
-        setStoredUser(loggedIn)
+        await setToken(token)
+        await setStoredUser(loggedIn)
         toast.success('Welcome back!')
         // Redirect via useEffect once state updates
         window.location.href = loggedIn.role === 'super_admin'
@@ -43,8 +43,8 @@ export function AuthPage() {
       } else {
         if (!name.trim()) { toast.error('Name is required'); setIsSubmitting(false); return }
         const { token, user: created } = await apiAuth.register(name, email, password)
-        setToken(token)
-        setStoredUser(created)
+        await setToken(token)
+        await setStoredUser(created)
         toast.success('Admin account created! Setting up your dashboard...')
         window.location.href = '/admin/dashboard'
       }

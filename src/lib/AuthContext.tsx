@@ -95,7 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         apiAuth.me()
           .then(async (fresh) => {
             setUserState(fresh)
-            setStoredUser(fresh)
+            await setStoredUser(fresh)
             if (fresh.role === 'student') {
               await loadStudentData(fresh)
             }
@@ -118,7 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const setUser = useCallback(async (u: ApiUser) => {
     setUserState(u)
-    setStoredUser(u)
+    await setStoredUser(u)
     if (u.role === 'student') {
       await loadStudentData(u)
     }

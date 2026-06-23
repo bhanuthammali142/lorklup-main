@@ -55,9 +55,9 @@ export function getDocumentUrl(relativePath: string | null | undefined): string 
   return `${BASE_URL}${cleanPath}${token ? `${separator}token=${token}` : ''}`
 }
 
-export function setToken(token: string) {
+export async function setToken(token: string) {
   cachedToken = token
-  secureStorage.setSecure('hostelOS_token', token)
+  await secureStorage.setSecure('hostelOS_token', token)
 }
 
 export function clearToken() {
@@ -79,9 +79,9 @@ export function getStoredUser(): ApiUser | null {
   }
 }
 
-export function setStoredUser(user: ApiUser) {
+export async function setStoredUser(user: ApiUser) {
   cachedUser = user
-  secureStorage.setSecure('hostelOS_user', JSON.stringify(user))
+  await secureStorage.setSecure('hostelOS_user', JSON.stringify(user))
 }
 
 // ── Core Request Function ─────────────────────────────────────────────────────
@@ -143,8 +143,8 @@ export const apiAuth = {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     })
-    setToken(response.token)
-    setStoredUser(response.user)
+    await setToken(response.token)
+    await setStoredUser(response.user)
     return response
   },
 
@@ -173,8 +173,8 @@ export const apiAuth = {
       method: 'POST',
       body: JSON.stringify({ idToken }),
     })
-    setToken(response.token)
-    setStoredUser(response.user)
+    await setToken(response.token)
+    await setStoredUser(response.user)
     return response
   },
 

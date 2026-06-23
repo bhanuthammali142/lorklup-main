@@ -111,8 +111,8 @@ export function Login() {
         throw new Error('Invalid response from server')
       }
 
-      setToken(data.token)
-      setStoredUser(data.user)
+      await setToken(data.token)
+      await setStoredUser(data.user)
       redirectByRole(data.user.role)
 
     } catch (err: any) {
