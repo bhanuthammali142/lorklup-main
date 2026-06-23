@@ -87,7 +87,7 @@ export async function setStoredUser(user: ApiUser) {
 // ── Core Request Function ─────────────────────────────────────────────────────
 async function request<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken()
-  const isAuthRoute = path.includes('/auth/login') || path.includes('/auth/register')
+  const isAuthRoute = path.includes('/auth/login') || path.includes('/auth/register') || path.includes('/auth/google-login')
 
   // Block unauthenticated requests (except auth routes)
   if (!token && !isAuthRoute) {
