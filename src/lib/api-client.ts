@@ -139,7 +139,7 @@ async function request<T = unknown>(path: string, options: RequestInit = {}): Pr
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export const apiAuth = {
   login: async (email: string, password: string) => {
-    const response = await request<{ token: string; user: ApiUser }>('/auth/login', {
+    const response = await request<{ token: string; user: ApiUser }>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     })
@@ -148,28 +148,28 @@ export const apiAuth = {
     return response
   },
 
-  me: () => request<ApiUser>('/auth/me'),
+  me: () => request<ApiUser>('/api/auth/me'),
 
   register: (name: string, email: string, password: string) =>
-    request<{ token: string; user: ApiUser }>('/auth/register', {
+    request<{ token: string; user: ApiUser }>('/api/auth/register', {
       method: 'POST',
       body: JSON.stringify({ name, email, password }),
     }),
 
   changePassword: (newPassword: string) =>
-    request('/auth/me', {
+    request('/api/auth/me', {
       method: 'PUT',
       body: JSON.stringify({ newPassword }),
     }),
 
   updateProfile: (name: string, phone: string, email: string, bank_name?: string, account_holder?: string, account_number?: string, ifsc_code?: string) =>
-    request('/auth/profile', {
+    request('/api/auth/profile', {
       method: 'PUT',
       body: JSON.stringify({ name, phone, email, bank_name, account_holder, account_number, ifsc_code }),
     }),
 
   googleLogin: async (idToken: string) => {
-    const response = await request<{ token: string; user: ApiUser }>('/auth/google-login', {
+    const response = await request<{ token: string; user: ApiUser }>('/api/auth/google-login', {
       method: 'POST',
       body: JSON.stringify({ idToken }),
     })
@@ -179,19 +179,19 @@ export const apiAuth = {
   },
 
   linkGoogle: (idToken: string) =>
-    request<{ success: boolean; message: string }>('/auth/link-google', {
+    request<{ success: boolean; message: string }>('/api/auth/link-google', {
       method: 'POST',
       body: JSON.stringify({ idToken }),
     }),
 
   unlinkGoogle: () =>
-    request<{ success: boolean; message: string }>('/auth/unlink-google', {
+    request<{ success: boolean; message: string }>('/api/auth/unlink-google', {
       method: 'POST'
     }),
 
   logoutAll: async () => {
     try {
-      await request('/auth/logout-all', { method: 'POST' })
+      await request('/api/auth/logout-all', { method: 'POST' })
     } finally {
       clearToken()
       window.location.href = '/login'
@@ -199,7 +199,7 @@ export const apiAuth = {
   },
 
   googleStatus: () =>
-    request<{ isLinked: boolean; googleLinkedAt: string | null; authProvider: string; activities: any[] }>('/auth/google-status'),
+    request<{ isLinked: boolean; googleLinkedAt: string | null; authProvider: string; activities: any[] }>('/api/auth/google-status'),
 }
 
 // ── Hostels ──────────────────────────────────────────────────────────────────
