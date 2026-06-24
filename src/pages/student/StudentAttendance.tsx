@@ -219,30 +219,36 @@ export function StudentAttendance() {
         <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-5">
           <h3 className="font-black text-white mb-4">Recent Records</h3>
           <div className="space-y-3.5 max-h-[350px] overflow-y-auto pr-1">
-            {[
-              { date: 'Yesterday', status: 'present', time: '08:30 AM' },
-              { date: '01 June 2026', status: 'present', time: '08:15 AM' },
-              { date: '31 May 2026', status: 'present', time: '08:22 AM' },
-              { date: '30 May 2026', status: 'absent', time: '—' },
-              { date: '29 May 2026', status: 'leave', time: 'Permit #123' },
-              { date: '28 May 2026', status: 'present', time: '08:25 AM' }
-            ].map((log, idx) => (
-              <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-800/40 border border-slate-800/50">
-                <div>
-                  <p className="text-xs font-black text-slate-200">{log.date}</p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">{log.time}</p>
-                </div>
-                <div>
-                  {log.status === 'present' ? (
-                    <span className="text-[10px] font-black uppercase text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Present</span>
-                  ) : log.status === 'absent' ? (
-                    <span className="text-[10px] font-black uppercase text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">Absent</span>
-                  ) : (
-                    <span className="text-[10px] font-black uppercase text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">Leave</span>
-                  )}
-                </div>
+            {history.length === 0 ? (
+              <div className="text-center py-12 text-xs font-semibold text-slate-500">
+                No check-in records found.
               </div>
-            ))}
+            ) : (
+              history.map((log, idx) => {
+                const dateStr = new Date(log.date).toLocaleDateString('en-IN', {
+                  day: '2-digit',
+                  month: 'long',
+                  year: 'numeric'
+                })
+                return (
+                  <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-800/40 border border-slate-800/50">
+                    <div>
+                      <p className="text-xs font-black text-slate-200">{dateStr}</p>
+                      <p className="text-[10px] text-slate-500 mt-0.5">Status: Verified</p>
+                    </div>
+                    <div>
+                      {log.status === 'present' ? (
+                        <span className="text-[10px] font-black uppercase text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Present</span>
+                      ) : log.status === 'absent' ? (
+                        <span className="text-[10px] font-black uppercase text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">Absent</span>
+                      ) : (
+                        <span className="text-[10px] font-black uppercase text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">Leave</span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })
+            )}
           </div>
         </div>
       </div>
