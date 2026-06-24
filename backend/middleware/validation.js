@@ -113,7 +113,7 @@ function sanitizeObject(obj) {
 
     if (typeof value === 'string') {
       const lowerKey = String(sanitizedKey).toLowerCase();
-      // Skip HTML escaping for passwords, emails, tokens, secrets, and payment signatures to prevent corruption
+      // Skip HTML escaping for passwords, emails, tokens, secrets, payment signatures, and base64 image/document data to prevent corruption
       if (
         lowerKey.includes('password') ||
         lowerKey.includes('email') ||
@@ -122,7 +122,11 @@ function sanitizeObject(obj) {
         lowerKey.includes('key') ||
         lowerKey.includes('secret') ||
         lowerKey.includes('razorpay') ||
-        lowerKey === 'transaction_id'
+        lowerKey === 'transaction_id' ||
+        lowerKey.includes('photo') ||
+        lowerKey.includes('image') ||
+        lowerKey.includes('document') ||
+        value.startsWith('data:')
       ) {
         sanitized[sanitizedKey] = validator.trim(value);
       } else {
