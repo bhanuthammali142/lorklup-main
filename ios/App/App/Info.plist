@@ -45,5 +45,11 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>HostelOS needs camera access to take student profile photos and capture ID documents.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>HostelOS needs access to your photo library to choose profile photos and upload ID documents.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>HostelOS needs permission to save images to your photo library.</string>
 </dict>
 </plist>
