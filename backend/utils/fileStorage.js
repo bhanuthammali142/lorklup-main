@@ -23,8 +23,11 @@ function saveBase64Image(base64Data, folder, filename) {
     return base64Data
   }
 
+  // Remove any whitespace, newlines or carriage returns that might be in the base64 string
+  const cleanedData = base64Data.replace(/[\s\r\n]/g, '')
+
   // Parse the base64 string
-  const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/)
+  const matches = cleanedData.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/)
   if (!matches || matches.length !== 3) {
     throw new Error('Invalid base64 image data format')
   }
