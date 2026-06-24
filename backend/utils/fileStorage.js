@@ -29,6 +29,9 @@ function saveBase64Image(base64Data, folder, filename) {
   // Parse the base64 string
   const matches = cleanedData.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/)
   if (!matches || matches.length !== 3) {
+    console.error('❌ [saveBase64Image] failed validation for:', filename);
+    console.error('   cleanedData length:', cleanedData.length);
+    console.error('   cleanedData start:', cleanedData.substring(0, 100));
     throw new Error('Invalid base64 image data format')
   }
 
