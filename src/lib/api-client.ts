@@ -332,6 +332,9 @@ export const apiAttendance = {
 
   mark: (data: unknown) =>
     request('/api/attendance', { method: 'POST', body: JSON.stringify(data) }),
+
+  getHistory: (studentId: string) =>
+    studentId ? request<{ date: string; status: 'present' | 'absent' | 'leave' }[]>(`/api/attendance/student/${studentId}`) : Promise.resolve([]),
 }
 
 // ── Food Menu ─────────────────────────────────────────────────────────────────

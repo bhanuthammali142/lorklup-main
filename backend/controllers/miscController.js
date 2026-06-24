@@ -306,10 +306,32 @@ async function getOccupancyByMonth(req, res) {
   }
 }
 
+// GET /api/attendance/student/:studentId
+async function getStudentAttendanceHistory(req, res) {
+  const { studentId } = req.params
+  try {
+    if (req.user.role === 'student') {
+      const { rows: selfRows } = await pool.query('SELECT id FROM students WHERE user_id = $1', [req.user.id])
+      if (selfRows.length === 0 || selfRows[0].id !== studentId) {
+        return res.status(403).json({ error: 'Access denied' })
+      }
+    }
+
+    const { rows } = await pool.query(
+      'SELECT date, status FROM attendance WHERE student_id = $1 ORDER BY date DESC',
+      [studentId]
+    )
+    res.json(rows)
+  } catch (err) {
+    console.error('[getStudentAttendanceHistory]', err)
+    res.status(500).json({ error: 'Server error' })
+  }
+}
+
 module.exports = {
   getDashboardStats, getRevenueByMonth, getOccupancyByMonth,
   getComplaints, addComplaint, updateComplaint,
   getAnnouncements, addAnnouncement, deleteAnnouncement,
-  getAttendance, markAttendance,
+  getAttendance, markAttendance, getStudentAttendanceHistory,
   getFoodMenu, saveFoodMenu
 }

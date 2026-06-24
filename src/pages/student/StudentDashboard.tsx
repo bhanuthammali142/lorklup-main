@@ -25,7 +25,7 @@ export function StudentDashboard() {
 
   const [fees, setFees] = useState<any[]>([])
   const [recentAnnouncements, setRecentAnnouncements] = useState<any[]>([])
-  const [attendancePct] = useState<number>(88) // High-fidelity mock stats
+  const [attendancePct, setAttendancePct] = useState<number>(100)
   const [openComplaints, setOpenComplaints] = useState<number>(0)
   const [todayAttendance, setTodayAttendance] = useState<'present' | 'absent' | 'leave' | 'unmarked'>('unmarked')
   const [loading, setLoading] = useState(true)
@@ -33,11 +33,12 @@ export function StudentDashboard() {
   const loadData = async () => {
     if (!studentData?.id || !hostelId) return
     try {
-      const [feeData, annData, attData, compData] = await Promise.all([
+      const [feeData, annData, attData, compData, historyData] = await Promise.all([
         apiFees.getForStudent(studentData.id),
         apiAnnouncements.getAll(hostelId),
         apiAttendance.get(hostelId, new Date().toISOString().split('T')[0]),
-        apiComplaints.getAll(hostelId)
+        apiComplaints.getAll(hostelId),
+        apiAttendance.getHistory(studentData.id)
       ])
 
       setFees(feeData || [])
@@ -56,6 +57,13 @@ export function StudentDashboard() {
         if (myRecord?.attendance_status) {
           setTodayAttendance(myRecord.attendance_status)
         }
+      }
+
+      // Calculate real attendance percentage
+      if (Array.isArray(historyData)) {
+        const total = historyData.length
+        const present = historyData.filter((h: any) => h.status === 'present').length
+        setAttendancePct(total > 0 ? Math.round((present / total) * 100) : 100)
       }
     } catch (err) {
       console.error('[StudentDashboard] load error:', err)

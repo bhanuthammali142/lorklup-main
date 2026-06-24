@@ -8,7 +8,7 @@ const {
   getDashboardStats, getRevenueByMonth, getOccupancyByMonth,
   getComplaints, addComplaint, updateComplaint,
   getAnnouncements, addAnnouncement, deleteAnnouncement,
-  getAttendance, markAttendance,
+  getAttendance, markAttendance, getStudentAttendanceHistory,
   getFoodMenu, saveFoodMenu
 } = require('../controllers/miscController')
 
@@ -39,6 +39,7 @@ router.post('/announcements', auditLog('CREATE_ANNOUNCEMENT', 'announcement'), a
 router.delete('/announcements/:id', auditLog('DELETE_ANNOUNCEMENT', 'announcement'), deleteAnnouncement)
 
 // ── Attendance ───────────────────────────────────────────────────────────────
+router.get('/attendance/student/:studentId', getStudentAttendanceHistory)
 router.get('/attendance', getAttendance)
 router.post('/attendance', auditLog('MARK_ATTENDANCE', 'attendance'), markAttendance)
 

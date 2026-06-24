@@ -9,43 +9,44 @@ export function StudentAttendance() {
   const [loading, setLoading] = useState(true)
   const [todayStatus, setTodayStatus] = useState<'present' | 'absent' | 'leave' | 'unmarked'>('unmarked')
   const [selectedDate, setSelectedDate] = useState(new Date())
-
-  // Mock historical attendance logs for premium experience
-  const [attendanceStats] = useState({
-    present: 24,
-    absent: 2,
-    leave: 1,
-    percentage: 88.8
-  })
+  const [history, setHistory] = useState<{ date: string; status: 'present' | 'absent' | 'leave' }[]>([])
 
   useEffect(() => {
     if (!studentData?.id || !hostelId) return
 
-    const fetchTodayAttendance = async () => {
+    const fetchAttendanceData = async () => {
       try {
         const todayStr = new Date().toISOString().split('T')[0]
-        const data = await apiAttendance.get(hostelId, todayStr)
-        if (Array.isArray(data)) {
-          const myRecord = data.find((a: any) => a.student_id === studentData.id || a.id === studentData.id) as any
+        const [todayData, historyData] = await Promise.all([
+          apiAttendance.get(hostelId, todayStr),
+          apiAttendance.getHistory(studentData.id)
+        ])
+
+        if (Array.isArray(todayData)) {
+          const myRecord = todayData.find((a: any) => a.student_id === studentData.id || a.id === studentData.id) as any
           if (myRecord?.attendance_status) {
             setTodayStatus(myRecord.attendance_status)
           }
         }
+
+        if (Array.isArray(historyData)) {
+          setHistory(historyData)
+        }
       } catch (err) {
-        console.error('Failed to load today attendance', err)
+        console.error('Failed to load attendance data', err)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchTodayAttendance()
+    fetchAttendanceData()
   }, [studentData, hostelId])
 
   const handleSelfCheckin = () => {
     toast.success('Self check-in QR scanner coming soon! Standardized for native deployment.')
   }
 
-  // Generate calendar days for selected month
+  // Generate calendar days for selected month using real database history logs
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear()
     const month = date.getMonth()
@@ -60,13 +61,9 @@ export function StudentAttendance() {
     
     // Add actual days
     for (let d = 1; d <= totalDays; d++) {
-      // Simulate status for demo days
-      let status: 'present' | 'absent' | 'leave' | 'none' = 'none'
-      if (d <= new Date().getDate() || date.getMonth() < new Date().getMonth()) {
-        if (d % 10 === 3) status = 'absent'
-        else if (d % 15 === 7) status = 'leave'
-        else status = 'present'
-      }
+      const formattedDayString = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+      const match = history.find(h => h.date.split('T')[0] === formattedDayString)
+      const status: 'present' | 'absent' | 'leave' | 'none' = match ? match.status : 'none'
       days.push({ dayNum: d, status })
     }
     return days
@@ -82,6 +79,13 @@ export function StudentAttendance() {
 
   const calendarDays = getDaysInMonth(selectedDate)
   const monthName = selectedDate.toLocaleString('default', { month: 'long', year: 'numeric' })
+
+  // Calculate real student attendance stats
+  const totalLogs = history.length
+  const presentCount = history.filter(h => h.status === 'present').length
+  const absentCount = history.filter(h => h.status === 'absent').length
+  const leaveCount = history.filter(h => h.status === 'leave').length
+  const percentage = totalLogs > 0 ? Math.round((presentCount / totalLogs) * 100) : 100
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -108,10 +112,10 @@ export function StudentAttendance() {
       {/* Attendance Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Present Rate', value: `${attendanceStats.percentage}%`, sub: 'Target: 85%', bg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
-          { label: 'Present Days', value: String(attendanceStats.present), sub: 'This semester', bg: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
-          { label: 'Absent Days', value: String(attendanceStats.absent), sub: 'Excuses required', bg: 'bg-rose-500/10 text-rose-400 border-rose-500/20' },
-          { label: 'On Leave', value: String(attendanceStats.leave), sub: 'Approved permits', bg: 'bg-amber-500/10 text-amber-400 border-amber-500/20' }
+          { label: 'Present Rate', value: `${percentage}%`, sub: 'Target: 85%', bg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
+          { label: 'Present Days', value: String(presentCount), sub: 'This semester', bg: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
+          { label: 'Absent Days', value: String(absentCount), sub: 'Excuses required', bg: 'bg-rose-500/10 text-rose-400 border-rose-500/20' },
+          { label: 'On Leave', value: String(leaveCount), sub: 'Approved permits', bg: 'bg-amber-500/10 text-amber-400 border-amber-500/20' }
         ].map((card, idx) => (
           <div key={idx} className={`rounded-2xl border p-4 backdrop-blur-md ${card.bg}`}>
             <p className="text-xs font-semibold uppercase tracking-wider opacity-85">{card.label}</p>
