@@ -10,6 +10,8 @@ export function usePushNotifications() {
   useEffect(() => {
     if (!user) return;
 
+    let cleanupFn: (() => void) | undefined;
+
     setupPushNotifications((data) => {
       console.log('[usePushNotifications] Notification clicked with data:', data);
       
@@ -27,6 +29,14 @@ export function usePushNotifications() {
         // Fallback custom relative url routing
         navigate(data.url);
       }
+    }).then(cleanup => {
+      cleanupFn = cleanup;
     });
+
+    return () => {
+      if (cleanupFn) {
+        cleanupFn();
+      }
+    };
   }, [user, navigate]);
 }

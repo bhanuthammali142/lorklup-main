@@ -90,6 +90,8 @@ export function Settings() {
   };
 
   useEffect(() => {
+    let script: HTMLScriptElement | null = null;
+
     if (activeSubPage === 'security' && googleStatus && !googleStatus.isLinked) {
       const renderLinkButton = () => {
         if ((window as any).google && document.getElementById('google-link-button')) {
@@ -116,7 +118,7 @@ export function Settings() {
       };
 
       if (!(window as any).google) {
-        const script = document.createElement('script');
+        script = document.createElement('script');
         script.src = 'https://accounts.google.com/gsi/client';
         script.async = true;
         script.defer = true;
@@ -126,6 +128,12 @@ export function Settings() {
         setTimeout(renderLinkButton, 100);
       }
     }
+
+    return () => {
+      if (script && document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
+    };
   }, [activeSubPage, googleStatus]);
   
   // Hostel details form state

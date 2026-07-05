@@ -9,19 +9,38 @@ async function getStudents(req, res) {
   if (!hostelId) return res.status(400).json({ error: 'hostel_id required' })
 
   try {
-    const { rows: rows } = await pool.query(
-      `SELECT s.*,
-              r.room_number, r.floor, r.type AS room_type, r.monthly_fee,
-              b.bed_number,
-              h.hostel_name
-       FROM students s
-       LEFT JOIN rooms r ON r.id = s.room_id
-       LEFT JOIN beds  b ON b.id = s.bed_id
-       LEFT JOIN hostels h ON h.id = s.hostel_id
-       WHERE s.hostel_id = $1 AND s.is_active = TRUE
-       ORDER BY s.created_at DESC`,
-      [hostelId]
-    )
+    let queryText = `
+      SELECT s.*,
+             r.room_number, r.floor, r.type AS room_type, r.monthly_fee,
+             b.bed_number,
+             h.hostel_name
+      FROM students s
+      LEFT JOIN rooms r ON r.id = s.room_id
+      LEFT JOIN beds  b ON b.id = s.bed_id
+      LEFT JOIN hostels h ON h.id = s.hostel_id
+      WHERE s.hostel_id = $1 AND s.is_active = TRUE
+      ORDER BY s.created_at DESC
+    `;
+    const queryParams = [hostelId];
+
+    const page = parseInt(req.query.page, 10);
+    const limit = parseInt(req.query.limit, 10);
+
+    if (!isNaN(page) && !isNaN(limit) && page > 0 && limit > 0) {
+      const offset = (page - 1) * limit;
+      queryText += ` LIMIT $2 OFFSET $3`;
+      queryParams.push(limit, offset);
+
+      // Get total count
+      const { rows: [{ total }] } = await pool.query(
+        `SELECT COUNT(*) as total FROM students WHERE hostel_id = $1 AND is_active = TRUE`,
+        [hostelId]
+      );
+      res.setHeader('X-Total-Count', total);
+      res.setHeader('Access-Control-Expose-Headers', 'X-Total-Count');
+    }
+
+    const { rows: rows } = await pool.query(queryText, queryParams)
 
     // Map rows to include nested rooms and beds for the frontend types
     const mappedRows = rows.map(row => ({
@@ -269,6 +288,17 @@ async function updateStudent(req, res) {
   if (updates.length === 0) return res.status(400).json({ error: 'No valid fields to update' })
 
   try {
+    // Check ownership/permission
+    if (req.user.role !== 'super_admin') {
+      const { rows: studentCheck } = await pool.query('SELECT hostel_id FROM students WHERE id = $1', [id])
+      if (studentCheck.length === 0) {
+        return res.status(404).json({ error: 'Student not found' })
+      }
+      if (String(studentCheck[0].hostel_id) !== String(req.user.hostel_id)) {
+        return res.status(403).json({ error: 'Access denied: Student belongs to another hostel' })
+      }
+    }
+
     // Build SET clause with PostgreSQL numbered placeholders
     const setClause = updates.map((k, i) => `${k} = $${i + 1}`).join(', ')
     const vals = [...updates.map(k => fields[k]), id]
@@ -306,6 +336,23 @@ async function updateStudent(req, res) {
 // DELETE /api/students/:id
 async function deleteStudent(req, res) {
   const { id } = req.params
+
+  // Check ownership/permission
+  if (req.user.role !== 'super_admin') {
+    try {
+      const { rows: studentCheck } = await pool.query('SELECT hostel_id FROM students WHERE id = $1', [id])
+      if (studentCheck.length === 0) {
+        return res.status(404).json({ error: 'Student not found' })
+      }
+      if (String(studentCheck[0].hostel_id) !== String(req.user.hostel_id)) {
+        return res.status(403).json({ error: 'Access denied: Student belongs to another hostel' })
+      }
+    } catch (err) {
+      console.error('[deleteStudent pre-check]', err)
+      return res.status(500).json({ error: 'Server error' })
+    }
+  }
+
   const conn = await pool.connect()
   try {
     await conn.query('BEGIN')

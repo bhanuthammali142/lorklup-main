@@ -12,8 +12,8 @@ const BASE_URL = envApiUrl.replace(/\/api$/, '')
 
 export function Login() {
   // Email state
-  const [email, setEmail] = useState('admin@hostel.com')
-  const [password, setPassword] = useState('Bhanu@2006')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   
   const [loading, setLoading] = useState(false)
@@ -222,11 +222,13 @@ export function Login() {
           </div>
 
           {/* Hint Credentials Box for demo purposes */}
-          <div className="mt-6 p-4 bg-slate-950 rounded-2xl border border-slate-800/80">
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">Default Credentials</p>
-            <p className="text-[11px] text-slate-300 font-mono">Email: admin@hostel.com</p>
-            <p className="text-[11px] text-slate-300 font-mono">Password: Bhanu@2006</p>
-          </div>
+          {import.meta.env.DEV && (
+            <div className="mt-6 p-4 bg-slate-950 rounded-2xl border border-slate-800/80">
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">Default Credentials (Dev Mode)</p>
+              <p className="text-[11px] text-slate-300 font-mono">Email: admin@hostel.com</p>
+              <p className="text-[11px] text-slate-300 font-mono">Password: Bhanu@2006</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

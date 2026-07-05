@@ -73,6 +73,13 @@ async function updateRoom(req, res) {
     }
     const hostelId = roomRows[0].hostel_id
 
+    // Authorization check
+    if (req.user.role !== 'super_admin' && String(hostelId) !== String(req.user.hostel_id)) {
+      await conn.query('ROLLBACK')
+      conn.release()
+      return res.status(403).json({ error: 'Access denied: Room belongs to another hostel' })
+    }
+
     // Update rooms table
     await conn.query(
       'UPDATE rooms SET room_number=$1, floor=$2, type=$3, capacity=$4, monthly_fee=$5 WHERE id=$6',
@@ -130,6 +137,16 @@ async function updateRoom(req, res) {
 async function deleteRoom(req, res) {
   const { id } = req.params
   try {
+    if (req.user.role !== 'super_admin') {
+      const { rows: roomRows } = await pool.query('SELECT hostel_id FROM rooms WHERE id = $1', [id])
+      if (roomRows.length === 0) {
+        return res.status(404).json({ error: 'Room not found' })
+      }
+      if (String(roomRows[0].hostel_id) !== String(req.user.hostel_id)) {
+        return res.status(403).json({ error: 'Access denied: Room belongs to another hostel' })
+      }
+    }
+
     await pool.query('DELETE FROM rooms WHERE id = $1', [id])
     res.json({ success: true })
   } catch (err) {

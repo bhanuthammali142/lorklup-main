@@ -28,15 +28,30 @@ export function SwipeableDrawer({
   const drawerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+
     if (isOpen) {
       setIsRendered(true)
       document.body.style.overflow = 'hidden' // lock scroll
+      window.addEventListener('keydown', handleKeyDown)
     } else {
       const timer = setTimeout(() => setIsRendered(false), 300) // matches transition duration
       document.body.style.overflow = ''
-      return () => clearTimeout(timer)
+      return () => {
+        clearTimeout(timer)
+        window.removeEventListener('keydown', handleKeyDown)
+      }
     }
-  }, [isOpen])
+
+    return () => {
+      document.body.style.overflow = ''
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isOpen, onClose])
 
   // Mobile gesture handling
   const handleTouchStart = (e: React.TouchEvent) => {

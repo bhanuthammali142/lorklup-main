@@ -29,7 +29,22 @@ async function addFee(req, res) {
   if (!hostel_id || !student_id || !amount || !month) {
     return res.status(400).json({ error: 'Missing required fields' })
   }
+
+  // Authorization check
+  if (req.user.role !== 'super_admin' && String(hostel_id) !== String(req.user.hostel_id)) {
+    return res.status(403).json({ error: 'Access denied to this hostel' })
+  }
+
   try {
+    // Verify student belongs to this hostel
+    const { rows: studentCheck } = await pool.query('SELECT hostel_id FROM students WHERE id = $1', [student_id])
+    if (studentCheck.length === 0) {
+      return res.status(404).json({ error: 'Student not found' })
+    }
+    if (String(studentCheck[0].hostel_id) !== String(hostel_id)) {
+      return res.status(400).json({ error: 'Student does not belong to the specified hostel' })
+    }
+
     const id = crypto.randomUUID()
     const result = await pool.query(
       `INSERT INTO fees (id, hostel_id, student_id, amount, due_amount, month, due_date, status)
@@ -52,6 +67,11 @@ async function addFee(req, res) {
 async function generateBulkFees(req, res) {
   const { hostel_id, month, due_date } = req.body
   if (!hostel_id || !month) return res.status(400).json({ error: 'hostel_id and month required' })
+
+  // Authorization check
+  if (req.user.role !== 'super_admin' && String(hostel_id) !== String(req.user.hostel_id)) {
+    return res.status(403).json({ error: 'Access denied to this hostel' })
+  }
 
   const parsedMonth = new Date(month)
   const normMonth = new Date(Date.UTC(parsedMonth.getFullYear(), parsedMonth.getMonth(), 1))
@@ -184,6 +204,12 @@ async function processPayment(req, res) {
 async function markOverdue(req, res) {
   const { hostel_id } = req.body
   if (!hostel_id) return res.status(400).json({ error: 'hostel_id required' })
+
+  // Authorization check
+  if (req.user.role !== 'super_admin' && String(hostel_id) !== String(req.user.hostel_id)) {
+    return res.status(403).json({ error: 'Access denied to this hostel' })
+  }
+
   const today = new Date().toISOString().split('T')[0]
   try {
     const { rows: result } = await pool.query(
@@ -201,7 +227,24 @@ async function markOverdue(req, res) {
 async function getStudentFees(req, res) {
   const { studentId } = req.params
   if (!studentId) return res.json([])
+
   try {
+    // Validate permission
+    if (req.user.role === 'student') {
+      const { rows: selfRows } = await pool.query('SELECT id FROM students WHERE user_id = $1', [req.user.id])
+      if (selfRows.length === 0 || selfRows[0].id !== studentId) {
+        return res.status(403).json({ error: 'Access denied to this student fee record' })
+      }
+    } else if (req.user.role !== 'super_admin') {
+      const { rows: studentCheck } = await pool.query('SELECT hostel_id FROM students WHERE id = $1', [studentId])
+      if (studentCheck.length === 0) {
+        return res.status(404).json({ error: 'Student not found' })
+      }
+      if (String(studentCheck[0].hostel_id) !== String(req.user.hostel_id)) {
+        return res.status(403).json({ error: 'Access denied: Student belongs to another hostel' })
+      }
+    }
+
     const { rows: rows } = await pool.query(
       'SELECT * FROM fees WHERE student_id = $1 ORDER BY month DESC',
       [studentId]

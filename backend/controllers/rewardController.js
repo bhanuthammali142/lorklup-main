@@ -46,6 +46,20 @@ const getStudentRewards = async (req, res) => {
   try {
     const { studentId } = req.params;
 
+    // Verify ownership/permission
+    if (req.user.role === 'student') {
+      const { rows: selfRows } = await db.query('SELECT id FROM students WHERE user_id = $1', [req.user.id])
+      if (selfRows.length === 0 || selfRows[0].id !== studentId) {
+        return res.status(403).json({ success: false, error: 'Access denied' })
+      }
+    } else if (req.user.role !== 'super_admin') {
+      const { rows: studRows } = await db.query('SELECT hostel_id FROM students WHERE id = $1', [studentId])
+      if (studRows.length === 0) return res.status(404).json({ success: false, error: 'Student not found' })
+      if (String(studRows[0].hostel_id) !== String(req.user.hostel_id)) {
+        return res.status(403).json({ success: false, error: 'Access denied: Student belongs to another hostel' })
+      }
+    }
+
     const { rows: [totalPoints] } = await db.query(
       `SELECT COALESCE(SUM(CASE WHEN type='earned' THEN points ELSE -points END), 0) AS total
        FROM reward_points
@@ -81,13 +95,21 @@ const getStudentRewards = async (req, res) => {
 // ─────────────────────────────────────────────
 const awardPoints = async (req, res) => {
   try {
-    const { student_id, hostel_id, points, reason, type = 'earned' } = req.body;
+    const { student_id, points, reason, type = 'earned' } = req.body;
+    const hostel_id = req.user.role === 'super_admin' ? req.body.hostel_id : req.user.hostel_id;
 
     if (!student_id || !hostel_id || points === undefined) {
       return res.status(400).json({ 
         success: false, 
         error: 'student_id, hostel_id, and points required' 
       });
+    }
+
+    // Verify student belongs to this hostel
+    const { rows: studRows } = await db.query('SELECT hostel_id FROM students WHERE id = $1', [student_id])
+    if (studRows.length === 0) return res.status(404).json({ success: false, error: 'Student not found' })
+    if (String(studRows[0].hostel_id) !== String(hostel_id)) {
+      return res.status(403).json({ success: false, error: 'Access denied: Student belongs to another hostel' })
     }
 
     const id = crypto.randomUUID();
@@ -111,13 +133,21 @@ const awardPoints = async (req, res) => {
 // ─────────────────────────────────────────────
 const redeemReward = async (req, res) => {
   try {
-    const { student_id, hostel_id, points_cost, reward_name } = req.body;
+    const { student_id, points_cost, reward_name } = req.body;
+    const hostel_id = req.user.role === 'super_admin' ? req.body.hostel_id : req.user.hostel_id;
 
     if (!student_id || !hostel_id || !points_cost) {
       return res.status(400).json({ 
         success: false, 
         error: 'student_id, hostel_id, and points_cost required' 
       });
+    }
+
+    // Verify student belongs to this hostel
+    const { rows: studRows } = await db.query('SELECT hostel_id FROM students WHERE id = $1', [student_id])
+    if (studRows.length === 0) return res.status(404).json({ success: false, error: 'Student not found' })
+    if (String(studRows[0].hostel_id) !== String(hostel_id)) {
+      return res.status(403).json({ success: false, error: 'Access denied: Student belongs to another hostel' })
     }
 
     // Check if student has enough points

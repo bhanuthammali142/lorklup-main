@@ -74,7 +74,8 @@ async function getComplaints(req, res) {
 
 // POST /api/complaints
 async function addComplaint(req, res) {
-  const { hostel_id, student_id, title, description, category, priority, status } = req.body
+  const { student_id, title, description, category, priority, status } = req.body
+  const hostel_id = req.user.role === 'super_admin' ? (req.body.hostel_id || req.query.hostel_id) : req.user.hostel_id
   if (!hostel_id || !title) return res.status(400).json({ error: 'hostel_id and title required' })
   try {
     const id = crypto.randomUUID()
@@ -94,6 +95,14 @@ async function updateComplaint(req, res) {
   const { id } = req.params
   const { status, priority, message } = req.body
   try {
+    // Check ownership/permission
+    const { rows: compRows } = await pool.query('SELECT hostel_id FROM complaints WHERE id = $1', [id])
+    if (compRows.length === 0) return res.status(404).json({ error: 'Complaint not found' })
+    
+    if (req.user.role !== 'super_admin' && String(compRows[0].hostel_id) !== String(req.user.hostel_id)) {
+      return res.status(403).json({ error: 'Access denied: Complaint belongs to another hostel' })
+    }
+
     await pool.query('UPDATE complaints SET status=$1, priority=$2 WHERE id=$3', [status, priority, id])
 
     // Query complaint details + student email for notification
@@ -142,7 +151,8 @@ async function getAnnouncements(req, res) {
 
 // POST /api/announcements
 async function addAnnouncement(req, res) {
-  const { hostel_id, title, message } = req.body
+  const { title, message } = req.body
+  const hostel_id = req.user.role === 'super_admin' ? (req.body.hostel_id || req.query.hostel_id) : req.user.hostel_id
   if (!hostel_id || !title || !message) return res.status(400).json({ error: 'hostel_id, title and message required' })
   try {
     const id = crypto.randomUUID()
@@ -177,6 +187,14 @@ async function addAnnouncement(req, res) {
 async function deleteAnnouncement(req, res) {
   const { id } = req.params
   try {
+    // Check ownership/permission
+    const { rows: annRows } = await pool.query('SELECT hostel_id FROM announcements WHERE id = $1', [id])
+    if (annRows.length === 0) return res.status(404).json({ error: 'Announcement not found' })
+
+    if (req.user.role !== 'super_admin' && String(annRows[0].hostel_id) !== String(req.user.hostel_id)) {
+      return res.status(403).json({ error: 'Access denied: Announcement belongs to another hostel' })
+    }
+
     await pool.query('DELETE FROM announcements WHERE id = $1', [id])
     res.json({ success: true })
   } catch (err) {
@@ -211,7 +229,8 @@ async function getAttendance(req, res) {
 
 // POST /api/attendance
 async function markAttendance(req, res) {
-  const { hostel_id, student_id, date, status } = req.body
+  const { student_id, date, status } = req.body
+  const hostel_id = req.user.role === 'super_admin' ? (req.body.hostel_id || req.query.hostel_id) : req.user.hostel_id
   if (!hostel_id || !student_id || !date || !status) {
     return res.status(400).json({ error: 'hostel_id, student_id, date and status required' })
   }
@@ -231,7 +250,7 @@ async function markAttendance(req, res) {
 
 // GET /api/food-menu?hostel_id=xxx
 async function getFoodMenu(req, res) {
-  const hostelId = req.query.hostel_id || req.user.hostel_id
+  const hostelId = req.user.role === 'super_admin' ? (req.query.hostel_id || req.user.hostel_id) : req.user.hostel_id
   if (!hostelId) return res.json({ menu: null })
   try {
     const { rows: rows } = await pool.query('SELECT menu FROM food_menus WHERE hostel_id = $1', [hostelId])
@@ -249,7 +268,8 @@ async function getFoodMenu(req, res) {
 
 // PUT /api/food-menu
 async function saveFoodMenu(req, res) {
-  const { hostel_id, menu } = req.body
+  const { menu } = req.body
+  const hostel_id = req.user.role === 'super_admin' ? (req.body.hostel_id || req.query.hostel_id) : req.user.hostel_id
   if (!hostel_id) return res.status(400).json({ error: 'hostel_id required' })
   try {
     // food_menus has UNIQUE on hostel_id so upsert works

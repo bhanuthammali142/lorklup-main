@@ -75,6 +75,8 @@ export function StudentProfile() {
   };
 
   React.useEffect(() => {
+    let script: HTMLScriptElement | null = null;
+
     if (googleStatus && !googleStatus.isLinked) {
       const renderLinkButton = () => {
         if ((window as any).google && document.getElementById('google-link-button')) {
@@ -101,7 +103,7 @@ export function StudentProfile() {
       };
 
       if (!(window as any).google) {
-        const script = document.createElement('script');
+        script = document.createElement('script');
         script.src = 'https://accounts.google.com/gsi/client';
         script.async = true;
         script.defer = true;
@@ -111,6 +113,12 @@ export function StudentProfile() {
         setTimeout(renderLinkButton, 100);
       }
     }
+
+    return () => {
+      if (script && document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
+    };
   }, [googleStatus]);
 
   const handlePasswordChange = async (e: React.FormEvent) => {
