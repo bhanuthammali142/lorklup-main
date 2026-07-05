@@ -237,9 +237,233 @@ const getPaymentHistory = async (req, res) => {
   }
 };
 
+// ─────────────────────────────────────────────
+// POST /api/payments/offline/request
+// Student requests an offline cash validation code
+// ─────────────────────────────────────────────
+const requestOfflinePayment = async (req, res) => {
+  try {
+    const { fee_id } = req.body;
+
+    if (!fee_id) {
+      return res.status(400).json({ success: false, error: 'fee_id is required' });
+    }
+
+    // Resolve student profile ID
+    const { rows: studentRows } = await db.query(
+      'SELECT id FROM students WHERE user_id = $1 LIMIT 1',
+      [req.user.id]
+    );
+
+    if (studentRows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Student profile not found' });
+    }
+    const studentId = studentRows[0].id;
+
+    // Verify fee belongs to this student
+    const { rows: feeRows } = await db.query(
+      'SELECT * FROM fees WHERE id = $1 AND student_id = $2',
+      [fee_id, studentId]
+    );
+
+    if (feeRows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Fee record not found' });
+    }
+
+    const fee = feeRows[0];
+    if (fee.status === 'paid') {
+      return res.status(400).json({ success: false, error: 'Fee is already paid' });
+    }
+
+    // Generate secure 4-digit code (1000 - 9999)
+    const code = crypto.randomInt(1000, 10000).toString();
+
+    // Update fee with offline request details
+    await db.query(
+      `UPDATE fees 
+         SET offline_code = $1, 
+             offline_payment_status = 'pending', 
+             offline_code_attempts = 0, 
+             offline_code_created_at = NOW() 
+       WHERE id = $2`,
+      [code, fee_id]
+    );
+
+    res.json({ success: true, code, offline_payment_status: 'pending' });
+  } catch (error) {
+    console.error('[requestOfflinePayment]', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// ─────────────────────────────────────────────
+// POST /api/payments/offline/verify
+// Admin verifies the 4-digit cash code and marks fee as paid
+// ─────────────────────────────────────────────
+const verifyOfflinePayment = async (req, res) => {
+  try {
+    const { fee_id, code } = req.body;
+
+    if (!fee_id || !code) {
+      return res.status(400).json({ success: false, error: 'fee_id and 4-digit code required' });
+    }
+
+    // Fetch fee
+    const { rows: feeRows } = await db.query(
+      'SELECT * FROM fees WHERE id = $1',
+      [fee_id]
+    );
+
+    if (feeRows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Fee record not found' });
+    }
+
+    const fee = feeRows[0];
+
+    // Enforce multi-tenant access check
+    if (req.user.role !== 'super_admin' && String(fee.hostel_id) !== String(req.user.hostel_id)) {
+      return res.status(403).json({ success: false, error: 'Access denied: Fee belongs to another hostel' });
+    }
+
+    if (fee.offline_payment_status !== 'pending' || !fee.offline_code) {
+      return res.status(400).json({ success: false, error: 'No offline cash payment request is pending for this fee' });
+    }
+
+    // Prevent brute force
+    if (fee.offline_code_attempts >= 3) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Verification locked due to too many failed attempts. Student must request a new code.' 
+      });
+    }
+
+    // Verify code
+    if (fee.offline_code !== String(code).trim()) {
+      const newAttempts = fee.offline_code_attempts + 1;
+      
+      if (newAttempts >= 3) {
+        // Exceeded attempts: Lock and reset
+        await db.query(
+          `UPDATE fees 
+              SET offline_payment_status = 'failed', 
+                  offline_code = NULL, 
+                  offline_code_attempts = $1 
+            WHERE id = $2`,
+          [newAttempts, fee_id]
+        );
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Invalid code. Verification locked after 3 failed attempts. Student must request a new code.' 
+        });
+      }
+
+      await db.query(
+        'UPDATE fees SET offline_code_attempts = $1 WHERE id = $2',
+        [newAttempts, fee_id]
+      );
+
+      return res.status(400).json({ 
+        success: false, 
+        error: `Invalid verification code. Attempts remaining: ${3 - newAttempts}` 
+      });
+    }
+
+    // Transaction to update fee and insert payment
+    const receiptId = `REC-CASH-${Date.now()}`;
+    const conn = await db.connect();
+    try {
+      await conn.query('BEGIN');
+
+      // Update fee
+      await conn.query(
+        `UPDATE fees 
+            SET status = 'paid', 
+                paid_amount = amount, 
+                due_amount = 0, 
+                paid_at = NOW(), 
+                receipt_id = $1,
+                offline_payment_status = 'verified',
+                offline_code = NULL,
+                offline_code_attempts = 0
+          WHERE id = $2`,
+        [receiptId, fee_id]
+      );
+
+      // Insert payment record
+      const paymentId = crypto.randomUUID();
+      await conn.query(
+        `INSERT INTO student_payments (id, hostel_id, fee_id, student_id, amount, payment_method, transaction_id)
+         VALUES ($1, $2, $3, $4, $5, 'cash', $6)`,
+        [paymentId, fee.hostel_id, fee_id, fee.student_id, fee.due_amount, receiptId]
+      );
+
+      // Create notification for student
+      await conn.query(
+        `INSERT INTO notifications (id, hostel_id, student_id, type, message)
+         VALUES ($1, $2, $3, 'payment_received', $4)`,
+        [
+          crypto.randomUUID(),
+          fee.hostel_id,
+          fee.student_id,
+          'payment_received',
+          `Cash payment of ₹${fee.due_amount} verified by owner. Receipt generated.`
+        ]
+      );
+
+      await conn.query('COMMIT');
+
+      // Award points asynchronously for on-time payment
+      try {
+        const { triggerAutomaticAward } = require('./rewardController');
+        const dueDate = new Date(fee.due_date);
+        const now = new Date();
+        if (now <= dueDate) {
+          await triggerAutomaticAward('Early fee payment', fee.student_id, fee.hostel_id, 50);
+        }
+      } catch (rewardErr) {
+        console.error('Failed to trigger automatic rewards:', rewardErr);
+      }
+
+      // Send email receipt asynchronously
+      try {
+        const { rows: studentRows } = await conn.query('SELECT email, full_name FROM students WHERE id = $1', [fee.student_id]);
+        if (studentRows.length > 0 && studentRows[0].email) {
+          const { sendPaymentReceiptEmail } = require('../utils/emailService');
+          const monthLabel = fee.month
+            ? new Date(fee.month).toLocaleString('default', { month: 'long', year: 'numeric' })
+            : 'Unknown';
+          sendPaymentReceiptEmail(
+            studentRows[0].email,
+            studentRows[0].full_name,
+            receiptId,
+            fee.due_amount,
+            monthLabel,
+            'cash'
+          ).catch(mailErr => console.error('Failed to send cash receipt email:', mailErr));
+        }
+      } catch (emailErr) {
+        console.error('Failed to resolve student email:', emailErr);
+      }
+
+      res.json({ success: true, message: 'Offline cash payment verified and fee marked as paid.' });
+    } catch (txErr) {
+      await conn.query('ROLLBACK');
+      console.error('[verifyOfflinePayment Tx]', txErr);
+      res.status(500).json({ success: false, error: 'Database transaction error during verification' });
+    } finally {
+      conn.release();
+    }
+  } catch (error) {
+    console.error('[verifyOfflinePayment]', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 module.exports = {
   createOrder,
   verifyPayment,
   handleWebhook,
-  getPaymentHistory
+  getPaymentHistory,
+  requestOfflinePayment,
+  verifyOfflinePayment
 };

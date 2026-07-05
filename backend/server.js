@@ -287,8 +287,13 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
       ALTER TABLE students ADD COLUMN IF NOT EXISTS document_status VARCHAR(50) DEFAULT 'pending';
       ALTER TABLE students ADD COLUMN IF NOT EXISTS verified_by VARCHAR(255);
       ALTER TABLE students ADD COLUMN IF NOT EXISTS verified_at TIMESTAMP;
+
+      ALTER TABLE fees ADD COLUMN IF NOT EXISTS offline_code VARCHAR(4) NULL;
+      ALTER TABLE fees ADD COLUMN IF NOT EXISTS offline_code_attempts INT DEFAULT 0;
+      ALTER TABLE fees ADD COLUMN IF NOT EXISTS offline_code_created_at TIMESTAMP NULL;
+      ALTER TABLE fees ADD COLUMN IF NOT EXISTS offline_payment_status VARCHAR(20) DEFAULT 'none';
     `)
-    console.log('✅ Database migration: Google Auth columns, bank details, student, and onboarding columns verified/added successfully')
+    console.log('✅ Database migration: Google Auth columns, bank details, student, onboarding, and offline payment columns verified/added successfully')
   } catch (err) {
     console.error('⚠️ Database migration failed:', err.message)
   }

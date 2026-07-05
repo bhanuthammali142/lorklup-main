@@ -5,6 +5,7 @@ import { Plus, Search, MessageCircle, FileDown, CheckCircle2, Clock, AlertCircle
 import { cn } from '../lib/utils'
 import { useAuth } from '../lib/AuthContext'
 import { getOrCreateHostel, getFees, processPayment, autoMarkOverdue, generateBulkFees } from '../lib/api'
+import { apiPayments } from '../lib/api-client'
 import { Skeleton } from '../components/Skeleton'
 import { AnimateView } from '../components/AnimateView'
 import toast from 'react-hot-toast'
@@ -30,6 +31,10 @@ export function Fees() {
   const [collectionDate, setCollectionDate] = useState(new Date().toISOString().split('T')[0])
   const [collectionAmount, setCollectionAmount] = useState<number>(0)
   const [savingMsg, setSavingMsg] = useState(false)
+
+  const [verifyingFee, setVerifyingFee] = useState<any | null>(null)
+  const [verificationCode, setVerificationCode] = useState('')
+  const [verifyingMsg, setVerifyingMsg] = useState(false)
 
   const [showGenerateModal, setShowGenerateModal] = useState(false)
   const [genMonthDate, setGenMonthDate] = useState(() => {
@@ -82,6 +87,30 @@ export function Fees() {
       queryClient.invalidateQueries({ queryKey: ['fees', hostelId] })
     } catch { toast.error('Failed to process payment.') }
     finally { setSavingMsg(false) }
+  }
+
+  const handleVerifyCode = async () => {
+    if (!verifyingFee || !verificationCode) return toast.error('Please enter the 4-digit code')
+    if (verificationCode.trim().length !== 4) return toast.error('Code must be exactly 4 digits')
+    setVerifyingMsg(true)
+    try {
+      const res = await apiPayments.verifyOfflinePayment({
+        fee_id: verifyingFee.id,
+        code: verificationCode.trim()
+      })
+      if (res.success) {
+        toast.success('Cash payment successfully verified!')
+        setVerifyingFee(null)
+        setVerificationCode('')
+        queryClient.invalidateQueries({ queryKey: ['fees', hostelId] })
+      } else {
+        toast.error(res.error || 'Verification failed')
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Verification failed')
+    } finally {
+      setVerifyingMsg(false)
+    }
   }
 
   const handleBulkGenerate = async () => {
@@ -344,32 +373,63 @@ export function Fees() {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={cn('inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border',
-                            fee.status === 'paid'    ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                            fee.status === 'partial' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                            fee.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                                                       'bg-rose-50 text-rose-700 border-rose-200 animate-pulse')}>
-                            {fee.status === 'paid'    && <CheckCircle2 className="h-3.5 w-3.5" />}
-                            {fee.status === 'pending' && <Clock className="h-3.5 w-3.5" />}
-                            {fee.status === 'overdue' && <AlertCircle className="h-3.5 w-3.5" />}
-                            {fee.status?.toUpperCase()}
-                          </span>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className={cn('inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border',
+                              fee.status === 'paid'    ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                              fee.status === 'partial' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                              fee.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                                         'bg-rose-50 text-rose-700 border-rose-200 animate-pulse')}>
+                              {fee.status === 'paid'    && <CheckCircle2 className="h-3.5 w-3.5" />}
+                              {fee.status === 'pending' && <Clock className="h-3.5 w-3.5" />}
+                              {fee.status === 'overdue' && <AlertCircle className="h-3.5 w-3.5" />}
+                              {fee.status?.toUpperCase()}
+                            </span>
+                            {fee.offline_payment_status === 'pending' && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-200 animate-pulse">
+                                Pending Cash Code
+                              </span>
+                            )}
+                          </div>
                           {daysLate > 0 && (
                             <p className="text-[11px] text-rose-600 font-bold mt-1">{daysLate} days late</p>
                           )}
                         </td>
                         <td className="px-6 py-4 text-right">
                           {fee.status !== 'paid' ? (
-                            <button
-                              onClick={() => {
-                                setCollectionDate(new Date().toISOString().split('T')[0])
-                                setCollectionAmount(Number(fee.due_amount))
-                                setCollectingFee(fee)
-                              }}
-                              className="text-xs font-bold bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition shadow-sm"
-                            >
-                              Collect Payment
-                            </button>
+                            fee.offline_payment_status === 'pending' ? (
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={() => {
+                                    setVerificationCode('')
+                                    setVerifyingFee(fee)
+                                  }}
+                                  className="text-xs font-bold bg-amber-500 text-slate-950 px-3 py-2 rounded-lg hover:bg-amber-600 transition shadow-sm animate-bounce"
+                                >
+                                  Verify Cash Code
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setCollectionDate(new Date().toISOString().split('T')[0])
+                                    setCollectionAmount(Number(fee.due_amount))
+                                    setCollectingFee(fee)
+                                  }}
+                                  className="text-xs font-semibold text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50 px-2 py-1 rounded transition"
+                                >
+                                  Manual Collect
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  setCollectionDate(new Date().toISOString().split('T')[0])
+                                  setCollectionAmount(Number(fee.due_amount))
+                                  setCollectingFee(fee)
+                                }}
+                                className="text-xs font-bold bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition shadow-sm"
+                              >
+                                Collect Payment
+                              </button>
+                            )
                           ) : (
                             <button
                               onClick={() => toast.success(`Receipt ID: ${fee.receipt_id || 'N/A'}`)}
@@ -388,6 +448,47 @@ export function Fees() {
           </div>
         </AnimateView>
       </div>
+
+      {/* VERIFY CASH CODE MODAL */}
+      {verifyingFee && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95">
+            <div className="border-b border-slate-100 p-4 flex justify-between items-center bg-slate-50">
+              <h2 className="text-lg font-bold text-slate-900">Verify Cash Code</h2>
+              <button onClick={() => setVerifyingFee(null)} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-full">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="bg-amber-50 border border-amber-100 p-3 rounded-xl text-sm">
+                <p className="text-amber-800"><span className="font-semibold">Student:</span> {verifyingFee.student_name}</p>
+                <p className="text-amber-800"><span className="font-semibold">Month:</span> {verifyingFee.month && new Date(verifyingFee.month).toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
+                <p className="text-amber-800"><span className="font-semibold">Amount:</span> {fmt(Number(verifyingFee.due_amount))}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700">Enter 4-Digit Code *</label>
+                <input
+                  type="text"
+                  maxLength={4}
+                  placeholder="0000"
+                  value={verificationCode}
+                  onChange={e => setVerificationCode(e.target.value.replace(/\D/g, ''))}
+                  className="w-full mt-1 border border-slate-200 rounded-lg px-3 py-2 text-center text-3xl font-mono font-black tracking-widest text-slate-950 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                />
+                <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                  Enter the 4-digit code provided by the student. Maximum 3 validation attempts are allowed before lock.
+                </p>
+              </div>
+            </div>
+            <div className="p-4 border-t border-slate-100 flex justify-end gap-2 bg-slate-50">
+              <button onClick={() => setVerifyingFee(null)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900">Cancel</button>
+              <button onClick={handleVerifyCode} disabled={verifyingMsg} className="btn-primary min-w-[120px] !bg-amber-500 hover:!bg-amber-600 !text-slate-950 font-bold">
+                {verifyingMsg ? <Loader2 className="animate-spin h-4 w-4 mx-auto" /> : 'Verify Code'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

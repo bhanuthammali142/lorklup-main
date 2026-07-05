@@ -500,6 +500,18 @@ export const apiPayments = {
     if (studentId) params.append('student_id', studentId)
     return request<{ success: boolean; data: any[] }>(`/api/payments/history?${params}`)
   },
+
+  requestOfflinePayment: (data: { fee_id: string }) =>
+    request<{ success: boolean; code: string }>('/api/payments/offline/request', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  verifyOfflinePayment: (data: { fee_id: string; code: string }) =>
+    request<{ success: boolean; message: string }>('/api/payments/offline/verify', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 }
 
 // ── Rewards ───────────────────────────────────────────────────────────────────

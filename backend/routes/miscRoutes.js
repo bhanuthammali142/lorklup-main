@@ -75,10 +75,12 @@ router.post('/rewards/award', auditLog('AWARD_POINTS', 'reward'), awardPoints)
 router.post('/rewards/redeem', auditLog('REDEEM_REWARD', 'reward'), redeemReward)
 
 // ── Payments ────────────────────────────────────────────────────────────────
-const { createOrder, verifyPayment, getPaymentHistory } = require('../controllers/paymentController')
+const { createOrder, verifyPayment, getPaymentHistory, requestOfflinePayment, verifyOfflinePayment } = require('../controllers/paymentController')
 router.post('/payments/create-order', createOrder)
 router.post('/payments/verify-payment', verifyPayment)
 router.get('/payments/history', getPaymentHistory)
+router.post('/payments/offline/request', requestOfflinePayment)
+router.post('/payments/offline/verify', verifyOfflinePayment)
 
 // ── Notifications ───────────────────────────────────────────────────────────
 const { getNotifications, markAsRead, markAllAsRead, getUnreadCount } = require('../controllers/notificationController')

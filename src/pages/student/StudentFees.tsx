@@ -9,6 +9,7 @@ import { apiFees, apiPayments } from '../../lib/api-client'
 import { cn } from '../../lib/utils'
 import { loadRazorpayScript, openRazorpayCheckout } from '../../lib/razorpay'
 import toast from 'react-hot-toast'
+import { FullScreenModal } from '../../components/FullScreenModal'
 
 function fmt(n: number) {
   return `₹${Number(n).toLocaleString('en-IN')}`
@@ -19,6 +20,11 @@ export function StudentFees() {
   const [fees, setFees] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [paying, setPaying] = useState<string | null>(null) // stores fee.id being paid
+
+  const [selectedFee, setSelectedFee] = useState<{ id: string; amount: number } | null>(null)
+  const [showOptionsModal, setShowOptionsModal] = useState(false)
+  const [offlineCode, setOfflineCode] = useState<string | null>(null)
+  const [requestingOffline, setRequestingOffline] = useState(false)
 
   useEffect(() => {
     if (!studentData?.id) return
@@ -98,6 +104,27 @@ export function StudentFees() {
     }
   }
 
+  const handleRequestOffline = async (feeId: string) => {
+    setRequestingOffline(true)
+    try {
+      const res = await apiPayments.requestOfflinePayment({ fee_id: feeId })
+      if (res.success) {
+        setOfflineCode(res.code)
+        toast.success('Offline cash validation code generated!')
+        if (studentData?.id) {
+          const data = await apiFees.getForStudent(studentData.id)
+          setFees(data || [])
+        }
+      } else {
+        throw new Error('Failed to generate validation code')
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Offline request failed')
+    } finally {
+      setRequestingOffline(false)
+    }
+  }
+
   if (!studentData) return null
 
   return (
@@ -117,13 +144,23 @@ export function StudentFees() {
         {totalDue > 0 && firstPendingFee && (
           <button
             className="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold px-6 py-3 rounded-xl transition-all shadow-lg hover:shadow-emerald-500/25 active:scale-95 w-full sm:w-auto flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
-            onClick={() => handlePayNow(firstPendingFee.id, firstPendingFee.due_amount)}
+            onClick={() => {
+              if (firstPendingFee.offline_payment_status === 'pending') {
+                setOfflineCode(firstPendingFee.offline_code)
+                setSelectedFee({ id: firstPendingFee.id, amount: firstPendingFee.due_amount })
+                setShowOptionsModal(true)
+              } else {
+                setSelectedFee({ id: firstPendingFee.id, amount: firstPendingFee.due_amount })
+                setOfflineCode(null)
+                setShowOptionsModal(true)
+              }
+            }}
             disabled={paying !== null}
           >
             {paying === firstPendingFee.id ? (
               <Loader2 className="animate-spin h-5 w-5 text-slate-900" />
             ) : null}
-            {paying === firstPendingFee.id ? 'Processing...' : 'Pay Outstanding'}
+            {firstPendingFee.offline_payment_status === 'pending' ? 'View Cash Code' : 'Pay Outstanding'}
           </button>
         )}
       </div>
@@ -186,14 +223,31 @@ export function StudentFees() {
                     {fee.status}
                   </span>
                   {fee.status !== 'paid' && (
-                    <button
-                      onClick={() => handlePayNow(fee.id, fee.due_amount)}
-                      disabled={paying !== null}
-                      className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 disabled:opacity-50"
-                    >
-                      {paying === fee.id ? <Loader2 className="animate-spin h-3 w-3" /> : null}
-                      {paying === fee.id ? 'Processing...' : 'Pay Now'}
-                    </button>
+                    fee.offline_payment_status === 'pending' ? (
+                      <button
+                        onClick={() => {
+                          setOfflineCode(fee.offline_code)
+                          setSelectedFee({ id: fee.id, amount: fee.due_amount })
+                          setShowOptionsModal(true)
+                        }}
+                        className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs px-3 py-1.5 rounded-lg transition flex items-center gap-1.5"
+                      >
+                        View Cash Code
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setSelectedFee({ id: fee.id, amount: fee.due_amount })
+                          setOfflineCode(null)
+                          setShowOptionsModal(true)
+                        }}
+                        disabled={paying !== null}
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 disabled:opacity-50"
+                      >
+                        {paying === fee.id ? <Loader2 className="animate-spin h-3 w-3" /> : null}
+                        {paying === fee.id ? 'Processing...' : 'Pay Now'}
+                      </button>
+                    )
                   )}
                   {fee.status === 'paid' && fee.receipt_id && (
                     <button
@@ -210,6 +264,78 @@ export function StudentFees() {
           </div>
         )}
       </div>
+
+      <FullScreenModal
+        isOpen={showOptionsModal}
+        onClose={() => {
+          setShowOptionsModal(false)
+          setSelectedFee(null)
+          setOfflineCode(null)
+        }}
+        title={offlineCode ? "Offline Payment Instruction" : "Select Payment Method"}
+      >
+        {selectedFee && (
+          <div className="space-y-6 text-slate-300">
+            <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-750/50 text-center">
+              <span className="text-slate-400 text-xs uppercase font-black tracking-wider">Amount to Pay</span>
+              <h4 className="text-3xl font-black text-white mt-1">{fmt(selectedFee.amount)}</h4>
+            </div>
+
+            {offlineCode ? (
+              <div className="space-y-4 text-center">
+                <div className="p-5 bg-amber-500/10 border border-amber-500/30 rounded-2xl">
+                  <span className="text-amber-400 text-xs font-black tracking-wider uppercase block mb-1">Cash Payment Code</span>
+                  <div className="text-5xl font-black tracking-widest text-amber-400 font-mono my-3 select-all">
+                    {offlineCode}
+                  </div>
+                  <p className="text-xs text-amber-300/80 leading-relaxed mt-2">
+                    Show this 4-digit code to the hostel owner when you pay them cash.
+                    The owner will verify it in their portal to confirm and clear this bill.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowOptionsModal(false)
+                    setSelectedFee(null)
+                    setOfflineCode(null)
+                  }}
+                  className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition"
+                >
+                  Done
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4">
+                <button
+                  onClick={() => {
+                    setShowOptionsModal(false)
+                    handlePayNow(selectedFee.id, selectedFee.amount)
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-5 rounded-2xl transition flex flex-col items-center justify-center gap-1 shadow-lg hover:shadow-blue-500/10 border border-blue-500/20"
+                >
+                  <span className="text-base font-black">Pay Online (Razorpay)</span>
+                  <span className="text-xs text-blue-200/70 font-normal">Convenient, instant e-receipt generation</span>
+                </button>
+
+                <button
+                  onClick={() => handleRequestOffline(selectedFee.id)}
+                  disabled={requestingOffline}
+                  className="bg-slate-800 hover:bg-slate-700 text-white font-bold py-4 px-5 rounded-2xl transition flex flex-col items-center justify-center gap-1 border border-slate-700/80 disabled:opacity-50"
+                >
+                  {requestingOffline ? (
+                    <Loader2 className="animate-spin h-5 w-5 text-white animate-spin" />
+                  ) : (
+                    <>
+                      <span className="text-base font-black">Pay Offline (Cash to Owner)</span>
+                      <span className="text-xs text-slate-400 font-normal">Get a 4-digit code for cash hand-over</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </FullScreenModal>
     </div>
   )
 }
