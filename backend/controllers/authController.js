@@ -63,7 +63,10 @@ const login = async (req, res) => {
         }
 
         // Update last login
-        await db.query('UPDATE users SET last_login = NOW(), last_login_at = NOW() WHERE id = $1', [user.id])
+        await db.query('UPDATE users SET last_login = NOW() WHERE id = $1', [user.id])
+        await db.query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]).catch(() => {
+            // Silently ignore if column is missing
+        })
 
         // Get display name & hostel_id based on role
         let name = ''
