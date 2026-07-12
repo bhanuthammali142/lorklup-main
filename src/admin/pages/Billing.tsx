@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { CreditCard, CheckCircle2, AlertCircle, Calendar, Download, RefreshCw, HelpCircle, ShieldAlert } from 'lucide-react';
 import { apiBilling, getToken } from '../../lib/api-client';
 import { Skeleton } from '../../components/Skeleton';
+import { loadRazorpayScript, openRazorpayCheckout } from '../../lib/razorpay';
 import toast from 'react-hot-toast';
 
 export function Billing() {
@@ -22,6 +23,9 @@ export function Billing() {
     try {
       const sub = data?.subscription;
       const res = await apiBilling.subscribe(sub?.id || 'plan_professional', selectedCycle);
+      
+      // Load Razorpay checkout script dynamically
+      await loadRazorpayScript();
       
       const options = {
         key: res.data.key_id,
@@ -51,8 +55,7 @@ export function Billing() {
         }
       };
       
-      const rzp = new (window as any).Razorpay(options);
-      rzp.open();
+      openRazorpayCheckout(options);
     } catch (error: any) {
       toast.error(error.message || 'Failed to initialize payment');
     } finally {
