@@ -25,6 +25,7 @@
     "@capacitor/splash-screen": "^8.0.1",
     "@capacitor/status-bar": "^8.0.2",
     "@capgo/capacitor-updater": "^8.49.1",
+    "@codetrix-studio/capacitor-google-auth": "^3.3.6",
     "@tanstack/react-query": "^5.99.0",
     "axios": "^1.15.0",
     "clsx": "^2.1.1",
@@ -35,13 +36,14 @@
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-hot-toast": "^2.6.0",
+    "react-is": "^19.2.7",
     "react-router-dom": "^7.14.0",
     "recharts": "^3.8.1",
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
     "@capacitor/android": "^8.4.0",
-    "@capacitor/cli": "^7.6.6",
+    "@capacitor/cli": "^7.6.7",
     "@capacitor/ios": "^8.4.0",
     "@eslint/js": "^9.39.4",
     "@types/node": "^24.12.2",
