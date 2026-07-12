@@ -4,7 +4,7 @@
  *
  * Platform-aware Google Sign-In:
  *   - Web   → Google Identity Services (GSI) via accounts.google.com/gsi/client
- *   - Android / iOS → @codetrix-studio/capacitor-google-auth (native flow)
+ *   - Android / iOS → @capgo/capacitor-social-login (native flow)
  *
  * Both paths return an ID token that is sent to /api/auth/google-login
  * to exchange for the app's JWT session token.
@@ -114,17 +114,17 @@ export async function renderGsiButton(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// NATIVE — @codetrix-studio/capacitor-google-auth
+// NATIVE — @capgo/capacitor-social-login
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Initialize the native Google Auth plugin (Android / iOS) */
 export async function initNativeGoogleAuth(): Promise<void> {
   try {
-    const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth')
-    await GoogleAuth.initialize({
-      clientId: CLIENT_ID,
-      scopes: ['profile', 'email'],
-      grantOfflineAccess: true,
+    const { SocialLogin } = await import('@capgo/capacitor-social-login')
+    await SocialLogin.initialize({
+      google: {
+        webClientId: CLIENT_ID,
+      },
     })
   } catch (err) {
     console.error('[GoogleAuth] Native init failed:', err)
@@ -134,15 +134,19 @@ export async function initNativeGoogleAuth(): Promise<void> {
 
 /** Trigger the native Google account picker and return an ID token */
 export async function nativeGoogleSignIn(): Promise<GoogleSignInResult> {
-  const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth')
+  const { SocialLogin } = await import('@capgo/capacitor-social-login')
 
-  const user = await GoogleAuth.signIn()
+  const loginResult = await SocialLogin.login({
+    provider: 'google',
+    options: {
+      scopes: ['profile', 'email'],
+    },
+  })
 
-  // The plugin exposes idToken on the authentication object
+  // The plugin returns tokens and profile under loginResult.result
   const idToken =
-    (user as any).authentication?.idToken ||
-    (user as any).idToken ||
-    (user as any).serverAuthCode
+    (loginResult as any).result?.idToken ||
+    (loginResult as any).result?.accessToken?.token
 
   if (!idToken) {
     throw new Error(
@@ -151,18 +155,19 @@ export async function nativeGoogleSignIn(): Promise<GoogleSignInResult> {
     )
   }
 
+  const profile = (loginResult as any).result?.profile
   return {
     idToken,
-    email: user.email ?? undefined,
-    displayName: user.name ?? undefined,
+    email: profile?.email ?? undefined,
+    displayName: profile?.name ?? undefined,
   }
 }
 
 /** Sign out from native Google Auth (clears the native session cache) */
 export async function nativeGoogleSignOut(): Promise<void> {
   try {
-    const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth')
-    await GoogleAuth.signOut()
+    const { SocialLogin } = await import('@capgo/capacitor-social-login')
+    await SocialLogin.logout({ provider: 'google' })
   } catch (err) {
     console.warn('[GoogleAuth] Native sign-out error (non-fatal):', err)
   }

@@ -32,11 +32,6 @@ const config: CapacitorConfig = {
     },
     CapacitorUpdater: {
       autoUpdate: true
-    },
-    GoogleAuth: {
-      scopes: ['profile', 'email'],
-      serverClientId: '75808913481-eiqe31mvndteeulaqmrs194bf2a4lmsg.apps.googleusercontent.com',
-      forceCodeForRefreshToken: true
     }
   }
 };
