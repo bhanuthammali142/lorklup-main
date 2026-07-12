@@ -229,7 +229,7 @@ const downloadInvoice = async (req, res) => {
 
         const { rows: [invoice] } = await db.query(`
             SELECT i.*, p.amount, p.gst_amount, p.total_amount, p.payment_date, p.billing_cycle,
-                   h.hostel_name, h.owner_name, h.owner_phone, ho.owner_name AS owner_name_from_db
+                   h.hostel_name, ho.owner_name, ho.owner_phone
             FROM invoices i
             JOIN payments p ON i.payment_id = p.id
             JOIN hostels h ON i.hostel_id = h.id
@@ -252,7 +252,7 @@ const downloadInvoice = async (req, res) => {
             year: 'numeric'
         }) : 'N/A';
 
-        const buyerName = invoice.owner_name || invoice.owner_name_from_db || 'Hostel Owner';
+        const buyerName = invoice.owner_name || 'Hostel Owner';
 
         const html = `
         <!DOCTYPE html>
