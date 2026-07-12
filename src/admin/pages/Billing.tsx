@@ -4,6 +4,7 @@ import { CreditCard, CheckCircle2, AlertCircle, Calendar, Download, RefreshCw, H
 import { apiBilling, getToken } from '../../lib/api-client';
 import { Skeleton } from '../../components/Skeleton';
 import { loadRazorpayScript, openRazorpayCheckout } from '../../lib/razorpay';
+import { openBrowser } from '../../lib/capacitor';
 import toast from 'react-hot-toast';
 
 export function Billing() {
@@ -21,8 +22,8 @@ export function Billing() {
   const handleSubscribe = async () => {
     setIsProcessing(true);
     try {
-      const sub = data?.subscription;
-      const res = await apiBilling.subscribe(sub?.id || 'plan_professional', selectedCycle);
+      const planId = selectedCycle === 'yearly' ? 'plan_professional_yearly' : 'plan_professional';
+      const res = await apiBilling.subscribe(planId, selectedCycle);
       
       // Load Razorpay checkout script dynamically
       await loadRazorpayScript();
@@ -363,14 +364,13 @@ export function Billing() {
                       <td className="py-4 text-right text-slate-500 font-medium">₹{gstAmount}</td>
                       <td className="py-4 text-right text-slate-900 font-extrabold">₹{totalAmount}</td>
                       <td className="py-4 text-center">
-                        <a
-                          href={getInvoiceDownloadUrl(inv.id)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition"
+                        <button
+                          type="button"
+                          onClick={() => openBrowser(getInvoiceDownloadUrl(inv.id))}
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition cursor-pointer"
                         >
                           <Download className="h-3.5 w-3.5" /> Download Tax Invoice
-                        </a>
+                        </button>
                       </td>
                     </tr>
                   );

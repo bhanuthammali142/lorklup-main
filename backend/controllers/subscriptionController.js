@@ -50,7 +50,8 @@ const createCheckoutSession = async (req, res) => {
             return res.status(403).json({ success: false, error: 'Hostel ID not found in session' });
         }
 
-        const billingCycle = req.body.billing_cycle === 'yearly' ? 'yearly' : 'monthly';
+        const planId = req.body.plan_id || '';
+        const billingCycle = (req.body.billing_cycle === 'yearly' || planId.includes('yearly')) ? 'yearly' : 'monthly';
 
         // Fetch active settings for monthly/annual price and GST percentage
         let price = 999.00;

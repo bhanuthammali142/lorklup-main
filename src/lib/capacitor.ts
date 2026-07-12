@@ -127,3 +127,22 @@ export async function pickPhotoFromGallery() {
   }
   throw new Error('Native gallery not available on web platform')
 }
+
+// ── Native Browser / URL Opener ────────────────────────────────────────────────
+export async function openBrowser(url: string): Promise<boolean> {
+  if (isNative()) {
+    try {
+      const { Browser } = await import('@capacitor/browser')
+      await Browser.open({ url })
+      return true
+    } catch (e) {
+      console.error('Native Browser.open failed, falling back to window.open', e)
+      window.open(url, '_blank')
+      return false
+    }
+  } else {
+    window.open(url, '_blank')
+    return true
+  }
+}
+
