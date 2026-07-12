@@ -161,6 +161,7 @@ export function Settings() {
 
   // Password update form state
   const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
     newPassword: '',
     confirmPassword: '',
   })
@@ -242,6 +243,10 @@ export function Settings() {
   }
 
   const handleSavePassword = async () => {
+    if (!passwordForm.currentPassword) {
+      toast.error('Current password is required')
+      return
+    }
     if (!passwordForm.newPassword) {
       toast.error('Password cannot be empty')
       return
@@ -257,9 +262,9 @@ export function Settings() {
 
     setSaving(true)
     try {
-      await apiAuth.changePassword(passwordForm.newPassword)
+      await apiAuth.changePassword(passwordForm.newPassword, passwordForm.currentPassword)
       toast.success('Password updated successfully!')
-      setPasswordForm({ newPassword: '', confirmPassword: '' })
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
       setActiveSubPage(null)
     } catch (err: any) {
       console.error('Password update error:', err)
@@ -590,6 +595,20 @@ export function Settings() {
 
                 <div className="bg-white border border-slate-200/60 rounded-2xl p-5 shadow-sm space-y-4">
                   <h3 className="text-xs font-black text-indigo-600 uppercase tracking-wider">Change Password</h3>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Current Password</label>
+                    <div className="relative">
+                      <Key className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <input
+                        type="password"
+                        placeholder="••••••••"
+                        value={passwordForm.currentPassword}
+                        onChange={e => setPasswordForm(p => ({ ...p, currentPassword: e.target.value }))}
+                        className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition"
+                      />
+                    </div>
+                  </div>
 
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">New Password</label>

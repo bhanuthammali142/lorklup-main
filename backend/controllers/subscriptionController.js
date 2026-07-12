@@ -150,14 +150,21 @@ const verifySubscriptionPayment = async (req, res) => {
             return res.status(400).json({ success: false, error: 'Missing Razorpay details' });
         }
 
+        if (!process.env.RAZORPAY_KEY_SECRET) {
+            return res.status(500).json({ success: false, error: 'Payment secret not configured on server' });
+        }
+
         // Verify Razorpay signature
         const body = razorpay_order_id + "|" + razorpay_payment_id;
         const expectedSignature = crypto
-            .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET || 'dummy_secret')
+            .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
             .update(body.toString())
             .digest("hex");
 
-        if (expectedSignature !== razorpay_signature) {
+        const expectedBuffer = Buffer.from(expectedSignature, 'hex');
+        const receivedBuffer = Buffer.from(razorpay_signature, 'hex');
+
+        if (expectedBuffer.length !== receivedBuffer.length || !crypto.timingSafeEqual(expectedBuffer, receivedBuffer)) {
             return res.status(400).json({ success: false, error: "Invalid payment signature verification" });
         }
 

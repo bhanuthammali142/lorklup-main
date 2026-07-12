@@ -278,6 +278,18 @@ const updateProfile = async (req, res) => {
     if (!name) return res.status(400).json({ error: 'Name is required' })
 
     try {
+        await db.query('BEGIN')
+
+        if (email) {
+            // Check if email is already taken by another user
+            const { rows: existingUsers } = await db.query('SELECT id FROM users WHERE email = $1 AND id <> $2', [email, userId])
+            if (existingUsers.length > 0) {
+                await db.query('ROLLBACK')
+                return res.status(400).json({ error: 'Email is already in use by another account' })
+            }
+            await db.query('UPDATE users SET email = $1 WHERE id = $2', [email, userId])
+        }
+
         if (req.user.role === 'super_admin') {
             await db.query(
                 'UPDATE super_admins SET name = $1, phone = $2 WHERE user_id = $3',
@@ -302,30 +314,35 @@ const updateProfile = async (req, res) => {
             )
         }
 
-        if (email) {
-            // Check if email is already taken by another user
-            const { rows: existingUsers } = await db.query('SELECT id FROM users WHERE email = $1 AND id <> $2', [email, userId])
-            if (existingUsers.length > 0) {
-                return res.status(400).json({ error: 'Email is already in use by another account' })
-            }
-            await db.query('UPDATE users SET email = $1 WHERE id = $2', [email, userId])
-        }
-
+        await db.query('COMMIT')
         res.json({ success: true, message: 'Profile updated successfully' })
     } catch (error) {
+        await db.query('ROLLBACK').catch(err => console.error('Rollback failed:', err))
         console.error('updateProfile error:', error)
         res.status(500).json({ error: error.message || 'Server error' })
     }
 }
 
 const changePassword = async (req, res) => {
-    const { newPassword } = req.body
-    if (!newPassword) return res.status(400).json({ error: 'newPassword required' })
+    const { currentPassword, newPassword } = req.body
+    if (!currentPassword || !newPassword) {
+        return res.status(400).json({ error: 'Both currentPassword and newPassword are required' })
+    }
     try {
         const bcrypt = require('bcryptjs')
+        const { rows } = await db.query('SELECT password FROM users WHERE id = $1', [req.user.id])
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' })
+        }
+
+        const isMatch = await bcrypt.compare(currentPassword, rows[0].password)
+        if (!isMatch) {
+            return res.status(400).json({ error: 'Incorrect current password' })
+        }
+
         const hash = await bcrypt.hash(newPassword, 12)
         await db.query('UPDATE users SET password = $1 WHERE id = $2', [hash, req.user.id])
-        res.json({ success: true, message: 'Password updated' })
+        res.json({ success: true, message: 'Password updated successfully' })
     } catch (error) {
         console.error('changePassword error:', error)
         res.status(500).json({ error: 'Server error' })

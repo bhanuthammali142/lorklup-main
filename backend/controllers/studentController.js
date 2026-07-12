@@ -180,6 +180,39 @@ async function addStudent(req, res) {
       }
     }
 
+    // Verify room and bed belong to this hostel and the bed is available
+    if (room_id && bed_id) {
+      const { rows: roomBedCheck } = await conn.query(
+        'SELECT r.hostel_id AS room_hostel, b.hostel_id AS bed_hostel, b.status AS bed_status FROM beds b JOIN rooms r ON b.room_id = r.id WHERE b.id = $1 AND r.id = $2',
+        [bed_id, room_id]
+      );
+
+      if (roomBedCheck.length === 0) {
+        await conn.query('ROLLBACK');
+        conn.release();
+        return res.status(400).json({ error: 'Room or Bed not found' });
+      }
+
+      const { room_hostel, bed_hostel } = roomBedCheck[0];
+      if (Number(room_hostel) !== Number(hostel_id) || Number(bed_hostel) !== Number(hostel_id)) {
+        await conn.query('ROLLBACK');
+        conn.release();
+        return res.status(400).json({ error: 'Room and Bed must belong to the specified hostel' });
+      }
+
+      // Atomically claim the bed
+      const { rowCount: bedUpdated } = await conn.query(
+        "UPDATE beds SET status = 'occupied' WHERE id = $1 AND status = 'available' AND hostel_id = $2",
+        [bed_id, hostel_id]
+      );
+
+      if (bedUpdated === 0) {
+        await conn.query('ROLLBACK');
+        conn.release();
+        return res.status(400).json({ error: 'Selected bed is not available' });
+      }
+    }
+
     const studentId = crypto.randomUUID()
     
     // Save uploaded documents securely
@@ -202,11 +235,6 @@ async function addStudent(req, res) {
         profilePhotoUrl, aadhaarFrontUrl, aadhaarBackUrl, collegeIdUrl, 'pending'
       ]
     )
-
-    // Mark bed as occupied
-    if (bed_id) {
-      await conn.query("UPDATE beds SET status = 'occupied' WHERE id = $1", [bed_id])
-    }
 
     // Auto-create current month fee if room assigned
     if (room_id) {
@@ -308,6 +336,75 @@ async function updateStudent(req, res) {
     const conn = await pool.connect()
     try {
       await conn.query('BEGIN')
+
+      // Check if room or bed is being updated
+      const { rows: studentCheck } = await conn.query('SELECT hostel_id, room_id, bed_id FROM students WHERE id = $1 FOR UPDATE', [id])
+      if (studentCheck.length === 0) {
+        await conn.query('ROLLBACK')
+        conn.release()
+        return res.status(404).json({ error: 'Student not found' })
+      }
+
+      const student = studentCheck[0];
+      const hostelId = student.hostel_id;
+
+      const isRoomChanging = fields.room_id !== undefined && fields.room_id !== student.room_id;
+      const isBedChanging = fields.bed_id !== undefined && fields.bed_id !== student.bed_id;
+
+      if (isRoomChanging || isBedChanging) {
+        const targetRoomId = fields.room_id !== undefined ? fields.room_id : student.room_id;
+        const targetBedId = fields.bed_id !== undefined ? fields.bed_id : student.bed_id;
+
+        if (targetBedId) {
+          if (!targetRoomId) {
+            await conn.query('ROLLBACK')
+            conn.release()
+            return res.status(400).json({ error: 'Cannot assign a bed without a room' })
+          }
+
+          // Verify new room and bed belong to this student's hostel
+          const { rows: roomBedCheck } = await conn.query(
+            'SELECT r.hostel_id AS room_hostel, b.hostel_id AS bed_hostel FROM beds b JOIN rooms r ON b.room_id = r.id WHERE b.id = $1 AND r.id = $2',
+            [targetBedId, targetRoomId]
+          );
+
+          if (roomBedCheck.length === 0) {
+            await conn.query('ROLLBACK')
+            conn.release()
+            return res.status(400).json({ error: 'Selected Room or Bed not found' })
+          }
+
+          const { room_hostel, bed_hostel } = roomBedCheck[0];
+          if (Number(room_hostel) !== Number(hostelId) || Number(bed_hostel) !== Number(hostelId)) {
+            await conn.query('ROLLBACK')
+            conn.release()
+            return res.status(400).json({ error: 'Room and Bed must belong to the student\'s hostel' })
+          }
+
+          if (isBedChanging) {
+            // Atomically claim the new bed
+            const { rowCount: bedUpdated } = await conn.query(
+              "UPDATE beds SET status = 'occupied' WHERE id = $1 AND status = 'available' AND hostel_id = $2",
+              [targetBedId, hostelId]
+            );
+
+            if (bedUpdated === 0) {
+              await conn.query('ROLLBACK')
+              conn.release()
+              return res.status(400).json({ error: 'The selected bed is no longer available' })
+            }
+
+            // Release the old bed
+            if (student.bed_id) {
+              await conn.query("UPDATE beds SET status = 'available' WHERE id = $1", [student.bed_id])
+            }
+          }
+        } else if (isBedChanging && student.bed_id) {
+          // New bed is null, release old bed
+          await conn.query("UPDATE beds SET status = 'available' WHERE id = $1", [student.bed_id])
+        }
+      }
+
       await conn.query(`UPDATE students SET ${setClause} WHERE id = ${wherePlaceholder}`, vals)
       
       // If deactivated, free up the bed

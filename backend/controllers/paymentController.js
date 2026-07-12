@@ -22,12 +22,13 @@ const rzp = Razorpay && process.env.RAZORPAY_KEY_ID
   : null;
 
 // ─────────────────────────────────────────────
+// ─────────────────────────────────────────────
 // POST /api/payments/create-order
 // Creates a Razorpay order for a fee payment
 // ─────────────────────────────────────────────
 const createOrder = async (req, res) => {
   try {
-    const { fee_id, amount, hostel_id } = req.body;
+    const { fee_id } = req.body;
 
     if (!rzp) {
       return res.status(503).json({ 
@@ -36,15 +37,62 @@ const createOrder = async (req, res) => {
       });
     }
 
-    if (!fee_id || !amount || !hostel_id) {
+    if (!fee_id) {
       return res.status(400).json({ 
         success: false, 
-        error: 'fee_id, amount, and hostel_id required' 
+        error: 'fee_id is required' 
       });
     }
 
-    // Razorpay amounts must be in paise (integers)
-    const baseAmount = Math.round(amount * 100);
+    // Load fee record from database
+    const { rows: [fee] } = await db.query(
+      'SELECT * FROM fees WHERE id = $1',
+      [fee_id]
+    );
+
+    if (!fee) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Fee record not found' 
+      });
+    }
+
+    if (fee.status === 'paid') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Fee is already paid' 
+      });
+    }
+
+    // Verify ownership of the fee
+    if (req.user.role === 'student') {
+      const { rows: studentRows } = await db.query(
+        'SELECT id FROM students WHERE user_id = $1 LIMIT 1',
+        [req.user.id]
+      );
+      if (studentRows.length === 0 || fee.student_id !== studentRows[0].id) {
+        return res.status(403).json({ 
+          success: false, 
+          error: 'Unauthorized: This fee does not belong to you' 
+        });
+      }
+    } else if (req.user.role === 'admin') {
+      if (fee.hostel_id !== req.user.hostel_id) {
+        return res.status(403).json({ 
+          success: false, 
+          error: 'Unauthorized: This fee belongs to another hostel' 
+        });
+      }
+    } else if (req.user.role !== 'super_admin') {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Access denied' 
+      });
+    }
+
+    // Calculate server-side amount based on actual due_amount
+    const price = Number(fee.due_amount);
+    const baseAmount = Math.round(price * 100);
     const convenienceFee = Math.round(baseAmount * 0.03); // 3% convenience fee
     const totalAmount = baseAmount + convenienceFee;
 
@@ -53,8 +101,8 @@ const createOrder = async (req, res) => {
       currency: 'INR',
       receipt: fee_id,
       notes: {
-        hostel_id,
-        fee_id,
+        hostel_id: fee.hostel_id,
+        fee_id: fee_id,
         convenience_fee_paise: convenienceFee
       }
     });
@@ -63,7 +111,7 @@ const createOrder = async (req, res) => {
       success: true,
       data: {
         order_id: order.id,
-        amount: amount,
+        amount: price,
         convenience_fee: convenienceFee / 100,
         total_amount: totalAmount / 100
       }
@@ -82,28 +130,21 @@ const verifyPayment = async (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, fee_id } = req.body;
 
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !fee_id) {
       return res.status(400).json({ 
         success: false, 
         error: 'Missing Razorpay verification details' 
       });
     }
 
-    // Verify signature
-    const crypto_module = require('crypto');
-    const generatedSignature = crypto_module
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-      .digest('hex');
-
-    if (generatedSignature !== razorpay_signature) {
-      return res.status(400).json({ 
+    if (!rzp) {
+      return res.status(503).json({ 
         success: false, 
-        error: 'Payment verification failed' 
+        error: 'Payment gateway not configured' 
       });
     }
 
-    // Update fee to paid
+    // Load fee record from database
     const { rows: [fee] } = await db.query(
       'SELECT * FROM fees WHERE id = $1',
       [fee_id]
@@ -113,6 +154,57 @@ const verifyPayment = async (req, res) => {
       return res.status(404).json({ 
         success: false, 
         error: 'Fee not found' 
+      });
+    }
+
+    // Verify ownership of the fee
+    if (req.user.role === 'student') {
+      const { rows: studentRows } = await db.query(
+        'SELECT id FROM students WHERE user_id = $1 LIMIT 1',
+        [req.user.id]
+      );
+      if (studentRows.length === 0 || fee.student_id !== studentRows[0].id) {
+        return res.status(403).json({ 
+          success: false, 
+          error: 'Unauthorized: This fee does not belong to you' 
+        });
+      }
+    } else if (req.user.role === 'admin') {
+      if (fee.hostel_id !== req.user.hostel_id) {
+        return res.status(403).json({ 
+          success: false, 
+          error: 'Unauthorized: This fee belongs to another hostel' 
+        });
+      }
+    } else if (req.user.role !== 'super_admin') {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Access denied' 
+      });
+    }
+
+    // Fetch the order from Razorpay to verify receipt matches the fee_id (prevents order ID substitution)
+    const orderDetails = await rzp.orders.fetch(razorpay_order_id);
+    if (!orderDetails || orderDetails.receipt !== fee_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid order verification: Order does not match fee_id'
+      });
+    }
+
+    // Verify signature in constant-time
+    const generatedSignature = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || '')
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+      .digest('hex');
+
+    const expectedBuffer = Buffer.from(generatedSignature, 'hex');
+    const receivedBuffer = Buffer.from(razorpay_signature, 'hex');
+
+    if (expectedBuffer.length !== receivedBuffer.length || !crypto.timingSafeEqual(expectedBuffer, receivedBuffer)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Payment verification failed' 
       });
     }
 

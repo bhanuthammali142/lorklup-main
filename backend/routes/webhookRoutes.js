@@ -24,14 +24,24 @@ router.post('/razorpay', express.json(), async (req, res) => {
             .update(payloadStr)
             .digest('hex');
 
-        if (signature !== expectedSignature) {
+        const compareSignatures = (sigA, sigB) => {
+            try {
+                const bufA = Buffer.from(sigA, 'hex');
+                const bufB = Buffer.from(sigB, 'hex');
+                return bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB);
+            } catch (e) {
+                return false;
+            }
+        };
+
+        if (!compareSignatures(signature, expectedSignature)) {
             // Also try with JSON.stringify just in case of mismatch
             const fallbackSignature = crypto
                 .createHmac('sha256', secret)
                 .update(JSON.stringify(req.body))
                 .digest('hex');
 
-            if (signature !== fallbackSignature) {
+            if (!compareSignatures(signature, fallbackSignature)) {
                 console.warn('⚠️ Webhook Signature Mismatch');
                 return res.status(400).send('Invalid signature');
             }
@@ -43,6 +53,17 @@ router.post('/razorpay', express.json(), async (req, res) => {
         if (event === 'subscription.charged') {
             const rzpSubscription = payload.subscription.entity;
             const rzpPayment = payload.payment.entity;
+
+            // Idempotency check: verify if the payment was already recorded
+            const { rows: [existingPayment] } = await db.query(
+                'SELECT id FROM payments WHERE transaction_id = $1 LIMIT 1',
+                [rzpPayment.id]
+            );
+
+            if (existingPayment) {
+                console.log(`ℹ️ Webhook: Payment ${rzpPayment.id} already processed. Skipping...`);
+                return res.status(200).send('Webhook processed (idempotency skip)');
+            }
 
             // Fetch the subscription record
             const { rows: [subscription] } = await db.query(

@@ -59,6 +59,14 @@ const apiLimiter = rateLimit({
   message: { error: 'Too many requests, please try again later.' }
 })
 
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: process.env.NODE_ENV === 'development' ? 10000 : 5, // 5 attempts per 15 minutes in production
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many login attempts, please try again later.' }
+})
+
 // CORS — configured for security
 const allowedOrigins = [
   'http://localhost:3000',
@@ -117,8 +125,8 @@ app.get('/api/health', (req, res) => {
 })
 
 // ── API ROUTES ─────────────────────────────────────────────────────────────────
-app.use('/api/auth',    authRoutes)
-app.use('/auth',        authRoutes)  // backward compatibility
+app.use('/api/auth',    authLimiter, authRoutes)
+app.use('/auth',        authLimiter, authRoutes)  // backward compatibility
 
 // ── SECURE DOCUMENT SERVING ROUTES ─────────────────────────────────────────────
 const { verifyToken } = require('./middleware/auth')

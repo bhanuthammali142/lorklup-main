@@ -156,10 +156,10 @@ export const apiAuth = {
       body: JSON.stringify({ name, email, password }),
     }),
 
-  changePassword: (newPassword: string) =>
+  changePassword: (newPassword: string, currentPassword?: string) =>
     request('/api/auth/me', {
       method: 'PUT',
-      body: JSON.stringify({ newPassword }),
+      body: JSON.stringify({ newPassword, currentPassword }),
     }),
 
   updateProfile: (name: string, phone: string, email: string, bank_name?: string, account_holder?: string, account_number?: string, ifsc_code?: string) =>

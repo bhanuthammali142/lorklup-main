@@ -21,6 +21,7 @@ function InfoField({ icon: Icon, label, value }: { icon: React.ElementType; labe
 export function StudentProfile() {
   const { studentData, signOut, user } = useAuth()
   const [showPasswordModal, setShowPasswordModal] = React.useState(false)
+  const [currentPassword, setCurrentPassword] = React.useState('')
   const [newPassword, setNewPassword] = React.useState('')
   const [confirmPassword, setConfirmPassword] = React.useState('')
   const [showPassword, setShowPassword] = React.useState(false)
@@ -123,6 +124,9 @@ export function StudentProfile() {
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!currentPassword) {
+      return toast.error('Current password is required')
+    }
     if (newPassword.length < 8) {
       return toast.error('Password must be at least 8 characters')
     }
@@ -133,10 +137,11 @@ export function StudentProfile() {
     setSavingPassword(true)
     try {
       const { apiAuth } = await import('../../lib/api-client')
-      await apiAuth.changePassword(newPassword)
+      await apiAuth.changePassword(newPassword, currentPassword)
       toast.success('Password updated successfully!')
       setNewPassword('')
       setConfirmPassword('')
+      setCurrentPassword('')
       setShowPasswordModal(false)
     } catch (err: any) {
       toast.error(err.message || 'Failed to update password')
@@ -357,6 +362,7 @@ export function StudentProfile() {
               <button
                 onClick={() => {
                   setShowPasswordModal(false)
+                  setCurrentPassword('')
                   setNewPassword('')
                   setConfirmPassword('')
                 }}
@@ -369,6 +375,18 @@ export function StudentProfile() {
 
             <div className="p-6">
               <form onSubmit={handlePasswordChange} className="space-y-4">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1.5">Current Password</label>
+                  <input
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="Enter current password"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    required
+                  />
+                </div>
+
                 <div>
                   <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1.5">New Password</label>
                   <div className="relative">
@@ -414,7 +432,7 @@ export function StudentProfile() {
 
                 <button
                   type="submit"
-                  disabled={newPassword.length < 8 || newPassword !== confirmPassword || savingPassword}
+                  disabled={!currentPassword || newPassword.length < 8 || newPassword !== confirmPassword || savingPassword}
                   className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-3 rounded-xl flex items-center justify-center gap-2 transition shadow-xl shadow-slate-900/20 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {savingPassword ? (

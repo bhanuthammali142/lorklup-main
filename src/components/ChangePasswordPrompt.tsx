@@ -8,16 +8,20 @@ import toast from 'react-hot-toast'
  * Forces them to set a new password before accessing the dashboard.
  */
 export function ChangePasswordPrompt({ onComplete }: { onComplete: () => void }) {
+  const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  const isValid = newPassword.length >= 8 && newPassword === confirmPassword
+  const isValid = currentPassword.length > 0 && newPassword.length >= 8 && newPassword === confirmPassword
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    if (!currentPassword) {
+      return toast.error('Current password is required')
+    }
     if (newPassword.length < 8) {
       return toast.error('Password must be at least 8 characters')
     }
@@ -27,7 +31,7 @@ export function ChangePasswordPrompt({ onComplete }: { onComplete: () => void })
 
     setSaving(true)
     try {
-      await apiAuth.changePassword(newPassword)
+      await apiAuth.changePassword(newPassword, currentPassword)
       toast.success('Password updated successfully!')
       onComplete()
     } catch (err: any) {
@@ -46,11 +50,23 @@ export function ChangePasswordPrompt({ onComplete }: { onComplete: () => void })
           </div>
           <h2 className="text-xl font-bold text-slate-900">Change Your Password</h2>
           <p className="text-slate-500 text-sm mt-2">
-            You're using a temporary password. Please set a new secure password to continue.
+            Please enter your current temporary password and choose a new secure password to continue.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="text-sm font-medium text-slate-700 block mb-1.5">Current (Temporary) Password</label>
+            <input
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder="Your temporary password"
+              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              required
+            />
+          </div>
+
           <div>
             <label className="text-sm font-medium text-slate-700 block mb-1.5">New Password</label>
             <div className="relative">

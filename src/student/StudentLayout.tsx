@@ -47,6 +47,7 @@ const NAV = [
 
 // ── Password Change Prompt ────────────────────────────────────────────────────
 function ChangePasswordPrompt({ onDone }: { onDone: () => void }) {
+  const [current, setCurrent]   = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm]   = useState('')
   const [showPw, setShowPw]     = useState(false)
@@ -54,13 +55,14 @@ function ChangePasswordPrompt({ onDone }: { onDone: () => void }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!current)                return toast.error('Current password is required')
     if (password.length < 8)     return toast.error('Password must be at least 8 characters')
     if (password !== confirm)    return toast.error('Passwords do not match')
     setSaving(true)
     try {
       // Password update via API
       const { apiAuth } = await import('../lib/api-client')
-      await apiAuth.changePassword(password)
+      await apiAuth.changePassword(password, current)
       toast.success('Password updated! Welcome to HostelOS.')
       onDone()
     } catch (err: any) {
@@ -77,10 +79,21 @@ function ChangePasswordPrompt({ onDone }: { onDone: () => void }) {
           </div>
           <h1 className="text-2xl font-black text-slate-900">Set Your Password</h1>
           <p className="text-sm text-slate-500 text-center">
-            You're using a temporary password. Please set a permanent one to continue.
+            Please enter your current temporary password and set a permanent one to continue.
           </p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Current Temporary Password</label>
+            <input
+              type="password"
+              value={current}
+              onChange={e => setCurrent(e.target.value)}
+              required
+              placeholder="Temporary password"
+              className="w-full mt-1 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            />
+          </div>
           <div>
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">New Password</label>
             <div className="relative mt-1">
