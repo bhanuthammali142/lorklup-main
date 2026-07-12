@@ -7,27 +7,35 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:908126464614:android:hostelos_android_app",
+        "mobilesdk_app_id": "1:908126464614:android:2f198d1e98cfd4ec725ba7",
         "android_client_info": {
           "package_name": "com.hostelos.app"
         }
       },
       "oauth_client": [
         {
-          "client_id": "75808913481-eiqe31mvndteeulaqmrs194bf2a4lmsg.apps.googleusercontent.com",
+          "client_id": "908126464614-tanf5eepvqpoktvkc181ihpeuo3e7kbt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.hostelos.app",
+            "certificate_hash": "a83e59f1c7586d440be55f7d4ad1678dc0e77b6d"
+          }
+        },
+        {
+          "client_id": "908126464614-vj6o254q59p0som0dtgnhp3tcaqm6j8s.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyAwOHjjWJI4T7eDyiYRzyFXfjT-OJWFkRU"
+          "current_key": "AIzaSyDahUuXOVNwUzjoogVYKY2sfGudPouuVQ0"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "75808913481-eiqe31mvndteeulaqmrs194bf2a4lmsg.apps.googleusercontent.com",
+              "client_id": "908126464614-vj6o254q59p0som0dtgnhp3tcaqm6j8s.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

@@ -14,7 +14,7 @@ import { Capacitor } from '@capacitor/core'
 
 const CLIENT_ID =
   import.meta.env.VITE_GOOGLE_CLIENT_ID ||
-  '75808913481-eiqe31mvndteeulaqmrs194bf2a4lmsg.apps.googleusercontent.com'
+  '908126464614-vj6o254q59p0som0dtgnhp3tcaqm6j8s.apps.googleusercontent.com'
 
 export type GoogleSignInResult = {
   idToken: string

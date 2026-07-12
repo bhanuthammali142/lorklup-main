@@ -5,5 +5,5 @@
     <string name="package_name">com.hostelos.app</string>
     <string name="custom_url_scheme">com.hostelos.app</string>
     <!-- Google Sign-In: Web Client ID from Google Cloud Console -->
-    <string name="server_client_id">75808913481-eiqe31mvndteeulaqmrs194bf2a4lmsg.apps.googleusercontent.com</string>
+    <string name="server_client_id">908126464614-vj6o254q59p0som0dtgnhp3tcaqm6j8s.apps.googleusercontent.com</string>
 </resources>
